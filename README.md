@@ -3,7 +3,7 @@
 
 
 ### 📁 Folder Structure
-<pre> ├── Reports and Documents       # Project documentation and reports <br/> ├── Misc                        # Miscellaneous files and resources <br/> └── Implementation              # Backend and Frontend applications </pre>
+<pre> ├── Reports and Documents       # Project documentation and reports <br/> ├── Misc                        # Miscellaneous files and resources <br/> └── Implementation              # Mobile and Web applications </pre>
 
 ### 🗺️ Course Overview
 - Name: Applied Research Project
