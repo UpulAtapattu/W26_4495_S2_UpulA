@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { getToken, saveToken, removeToken } from "../storage/auth.storage";
 
 type AuthContextType = {
+  isLoading: boolean;
   isAuthenticated: boolean;
   signIn: (token: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -11,13 +12,15 @@ const AuthContext = createContext<AuthContextType>(null as any);
 
 export function AuthProvider({ children }: any) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    getToken().then((token) => {
+    const bootstrap = async () => {
+      const token = await getToken();
       setIsAuthenticated(!!token);
-      setLoading(false);
-    });
+      setIsLoading(false);
+    };
+    bootstrap();
   }, []);
 
   const signIn = async (token: string) => {
@@ -30,13 +33,19 @@ export function AuthProvider({ children }: any) {
     setIsAuthenticated(false);
   };
 
-  if (loading) return null;
+  if (isLoading) return null;
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{ isAuthenticated, signIn, signOut, isLoading }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
+  return ctx;
+}

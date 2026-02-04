@@ -2,6 +2,7 @@ import { Alert } from "@/components/Alert";
 import { Button } from "@/components/Button";
 import Container from "@/components/Container";
 import { Input } from "@/components/Input";
+import { Loader } from "@/components/Loader";
 import Spacer from "@/components/Spacer";
 import { Title } from "@/components/Title";
 import { RootStackParamList } from "@/navigation/types";
@@ -16,8 +17,8 @@ type Props = NativeStackScreenProps<RootStackParamList, "Login">;
 const LoginScreen = ({ navigation }: Props) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<null | string>(null);
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
+  const [email, setEmail] = useState<string>("admin@ecoclean.com");
+  const [password, setPassword] = useState<string>("password123");
 
   const handleLogin = async () => {
     setError(null);
@@ -35,32 +36,32 @@ const LoginScreen = ({ navigation }: Props) => {
 
   return (
     <Container>
-      <View>
-        <Spacer size={10} />
-        <Title>Log In</Title>
-        <Spacer size={10} />
-        {error && (
-          <>
-            <Spacer size={16} />{" "}
-            <Alert variant="error" title="Error" message={error} />
-          </>
-        )}
-        <Input
-          placeholder="Enter your email"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <Spacer />
-        <Input
-          placeholder="Enter your password"
-          textContentType="password"
-          value={password}
-          onChangeText={setPassword}
-        />
-        <Spacer size={16} />
-        <Button title="Log In" onPress={handleLogin} />
-        <Spacer size={16} />
-      </View>
+      {loading ? (
+        <Loader />
+      ) : (
+        <View>
+          <Spacer size={10} />
+          <Title>Log In</Title>
+          <Spacer size={10} />
+          {error && <Alert variant="error" title="Error" message={error} />}
+          <Spacer size={10} />
+          <Input
+            placeholder="Enter your email"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <Spacer />
+          <Input
+            placeholder="Enter your password"
+            textContentType="password"
+            value={password}
+            onChangeText={setPassword}
+          />
+          <Spacer size={16} />
+          <Button title="Log In" onPress={handleLogin} />
+          <Spacer size={16} />
+        </View>
+      )}
     </Container>
   );
 };

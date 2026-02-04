@@ -5,9 +5,11 @@ import AdminNavigator from "../navigation/AdminNavigator";
 import CleanerNavigator from "../navigation/CleanerNavigation";
 import CustomerNavigator from "../navigation/CustomerNavigation";
 import { ActivityIndicator, View } from "react-native";
+import { useAuth } from "@/context/AuthContext";
 
 export default function RootNavigator() {
-  //   const { user, loading } = useAuth();
+  const c = useAuth();
+  console.log("console.log");
   const loading = false;
   const user = {
     role: "ADMIN",
@@ -25,13 +27,5 @@ export default function RootNavigator() {
     return <AuthNavigator />;
   }
 
-  if (user.role === "ADMIN") {
-    return <AdminNavigator />;
-  }
-
-  if (user.role === "CLEANER") {
-    return <CleanerNavigator />;
-  }
-
-  return <CustomerNavigator />;
+  return <CleanerNavigator />;
 }
