@@ -26,8 +26,8 @@ model User {
 
 model Appointment {
   id        String   @id @default(uuid())
-  startTime DateTime
-  endTime   DateTime
+  startTime DateTime @db.Timestamptz
+  endTime   DateTime @db.Timestamptz
   status    AppointmentStatus
   address   String
 
@@ -43,7 +43,7 @@ model Appointment {
   price           Float?
 
   notes     VisitNote[]
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz
 }
 
 model VisitNote {
