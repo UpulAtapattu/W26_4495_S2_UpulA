@@ -29,7 +29,6 @@ const Navbar = () => {
     <Affix position={{ top: 20, left: 20 }}>
       <Drawer
         size="15%"
-        mobileSize="100%"
         opened={opened}
         onClose={close}
         title="Nettoyage Eco Vert"
