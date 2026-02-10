@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap');
 
-html, button, p, h2{
+html, button, p, h1, h2, h3, h4, h5, h6, a, p, div, span{
   font-family: "Geist", sans-serif !important;
   font-style: normal !important;
 }
@@ -8,4 +8,8 @@ html, button, p, h2{
 .fc {
   font-family: "Geist", sans-serif !important;
   font-style: normal !important;
+}
+
+a{
+  text-decoration: none;
 }

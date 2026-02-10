@@ -1,47 +1,91 @@
 "use client";
 
-import { ActionIcon, Box, Group, Image, Text } from "@mantine/core";
+import {
+  ActionIcon,
+  Affix,
+  Box,
+  Divider,
+  Drawer,
+  NavLink,
+  Stack,
+} from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
-import React from "react";
-import { IoMenu } from "react-icons/io5";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  IoCogOutline,
+  IoHomeOutline,
+  IoLogOutOutline,
+  IoMenu,
+  IoPeopleOutline,
+} from "react-icons/io5";
+import { signOut } from "next-auth/react";
 
 const Navbar = () => {
+  const pathname = usePathname();
   const [opened, { open, close }] = useDisclosure(false);
 
   return (
-    <Box
-      component="header"
-      pos="fixed"
-      top={0}
-      left={0}
-      right={0}
-      h={64}
-      px="md"
-      bg="blue"
-      style={{ zIndex: 1000 }}
-    >
-      <Group h="100%" justify="space-between">
-        {/* Left: Logo */}
-        <Group gap="xs">
-          <ActionIcon onClick={open}>
-            <IoMenu />
-          </ActionIcon>
-          <Image
-            src="/logo.png"
-            width={32}
-            height={32}
-            alt="Eco Clean Logo"
-            style={{ objectFit: "contain" }}
-          />
-          <Text fw={600} c="white">
-            Eco Clean
-          </Text>
-        </Group>
+    <Affix position={{ top: 20, left: 20 }}>
+      <Drawer
+        size="15%"
+        mobileSize="100%"
+        opened={opened}
+        onClose={close}
+        title="Nettoyage Eco Vert"
+      >
+        <Stack h="100%" justify="space-between">
+          {/* Top navigation */}
+          <Stack gap={4}>
+            <NavLink
+              component={Link}
+              href="/"
+              bdrs="md"
+              label="Dashboard"
+              leftSection={<IoHomeOutline size={18} />}
+              active={pathname === "/"}
+            />
 
-        {/* Right: Actions (future-proof) */}
-        <Group gap="sm">{/* buttons / profile / etc */}</Group>
-      </Group>
-    </Box>
+            <NavLink
+              component={Link}
+              href="/users"
+              bdrs="md"
+              label="Users"
+              leftSection={<IoPeopleOutline size={18} />}
+              active={pathname.startsWith("/users")}
+            />
+
+            <NavLink
+              component={Link}
+              href="/settings"
+              bdrs="md"
+              label="Settings"
+              leftSection={<IoCogOutline size={18} />}
+              active={pathname.startsWith("/settings")}
+            />
+          </Stack>
+
+          {/* Bottom logout */}
+          <Box>
+            <Divider mb="xs" />
+            <NavLink
+              component="button"
+              label="Log out"
+              leftSection={<IoLogOutOutline size={18} />}
+              color="red"
+              bdrs="md"
+              onClick={() => {
+                signOut({ callbackUrl: "/login" });
+              }}
+            />
+          </Box>
+        </Stack>
+      </Drawer>
+
+      <ActionIcon variant="default" size="xl" onClick={open}>
+        <IoMenu />
+      </ActionIcon>
+    </Affix>
   );
 };
 
