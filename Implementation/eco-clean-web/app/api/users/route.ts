@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/session";
 import { NextResponse } from "next/server";
-import bcrypt from 'bcrypt';
+import bcrypt from "bcrypt";
 
 export async function GET() {
   const session = await getAuthSession();
@@ -10,17 +10,13 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const users = await prisma.user.findMany({
+  const clients = await prisma.client.findMany({
     select: {
       id: true,
-      name: true,
-      email: true,
-      role: true,
-      createdAt: true,
     },
   });
 
-  return NextResponse.json(users);
+  return NextResponse.json(clients);
 }
 
 export async function POST(req: Request) {

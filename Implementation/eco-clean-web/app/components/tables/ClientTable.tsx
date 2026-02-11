@@ -8,12 +8,20 @@ import {
   ScrollArea,
   Center,
   Box,
+  ActionIcon,
+  Badge,
+  Collapse,
+  Stack,
 } from "@mantine/core";
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { IoSearchOutline } from "react-icons/io5";
+import {
+  IoSearchOutline,
+  IoChevronDown,
+  IoChevronForward,
+} from "react-icons/io5";
 
 type Props = {
   clients: Client[];
@@ -23,8 +31,11 @@ export type Client = {
   id: string;
   firstName: string;
   lastName: string;
+  companyName?: string;
   email: string;
   phone: string;
+  preferredContact?: "call" | "sms" | "email";
+  leadSource?: string;
   createdAt: string;
 };
 
@@ -33,6 +44,15 @@ export const getClientName = (c: Client) => `${c.firstName} ${c.lastName}`;
 export default function ClientsTable({ clients }: Props) {
   const [query, setQuery] = useState("");
   const router = useRouter();
+
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const renderPreferredContact = (method?: "call" | "sms" | "email") => {
+    if (!method) return "—";
+    return method.toUpperCase();
+  };
+
+  const renderValue = (value?: string) => (value?.length ? value : "—");
 
   const filteredClients = useMemo(() => {
     const q = query.toLowerCase().trim();
@@ -43,7 +63,6 @@ export default function ClientsTable({ clients }: Props) {
       [getClientName(c), c.email, c.phone].join(" ").toLowerCase().includes(q),
     );
   }, [clients, query]);
-
   if (!clients.length) {
     return (
       <Center py="xl">
@@ -71,12 +90,14 @@ export default function ClientsTable({ clients }: Props) {
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Client</Table.Th>
+              <Table.Th>Company</Table.Th>
               <Table.Th>Email</Table.Th>
               <Table.Th>Phone</Table.Th>
+              <Table.Th>Preferred</Table.Th>
+              <Table.Th>Lead source</Table.Th>
               <Table.Th>Created</Table.Th>
             </Table.Tr>
           </Table.Thead>
-
           <Table.Tbody>
             {filteredClients.map((client) => (
               <Table.Tr
@@ -88,8 +109,18 @@ export default function ClientsTable({ clients }: Props) {
                   <Text fw={500}>{getClientName(client)}</Text>
                 </Table.Td>
 
+                <Table.Td>{renderValue(client.companyName)}</Table.Td>
+
                 <Table.Td>{client.email}</Table.Td>
+
                 <Table.Td>{client.phone}</Table.Td>
+
+                <Table.Td>
+                  {renderPreferredContact(client.preferredContact)}
+                </Table.Td>
+
+                <Table.Td>{renderValue(client.leadSource)}</Table.Td>
+
                 <Table.Td>
                   {new Date(client.createdAt).toLocaleDateString()}
                 </Table.Td>
