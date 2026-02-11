@@ -150,7 +150,7 @@ export default function DashboardShell({
         </Stack>
       </AppShell.Navbar>
       <AppShell.Main>
-        <Container bg="red" fluid>
+        <Container fluid>
           <ClientPropertyModal
             opened={clientPopoverOpened}
             onClose={() => setClientPopoverOpened(false)}

@@ -29,7 +29,7 @@ export default function RootLayout({
       >
         <MantineProvider
           theme={{ defaultRadius: "md", primaryColor: "green" }}
-          defaultColorScheme="dark"
+          defaultColorScheme="light"
         >
           <Providers>{children}</Providers>
         </MantineProvider>

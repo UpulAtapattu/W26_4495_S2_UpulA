@@ -1,29 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { getAuthSession } from "@/lib/session";
 import { NextResponse } from "next/server";
-
-type CreateClientPayload = {
-  title?: string;
-  firstName: string;
-  lastName: string;
-  companyName?: string;
-  email: string;
-  phone: string;
-  preferredContact: "call" | "sms" | "email";
-  leadSource?: string;
-
-  addresses: {
-    street1: string;
-    street2?: string;
-    city: string;
-    province: string;
-    postalCode: string;
-    country: string;
-    isBilling?: boolean;
-  }[];
-
-  note?: string;
-};
+import { Prisma } from "@prisma/client";
 
 export type Address = {
   street1: string;
@@ -36,6 +13,92 @@ export type Address = {
   isPrimary?: boolean;
   isBilling?: boolean;
 };
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+
+    const q = searchParams.get("q")?.trim() || "";
+    const page = Number(searchParams.get("page") || 1);
+    const limit = Number(searchParams.get("limit") || 20);
+    const sort = searchParams.get("sort") || "newest";
+
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.ClientWhereInput | undefined = q
+      ? {
+          OR: [
+            {
+              firstName: {
+                contains: q,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              lastName: {
+                contains: q,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              email: {
+                contains: q,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+            {
+              phone: {
+                contains: q,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+          ],
+        }
+      : undefined;
+
+    const orderBy: Prisma.ClientOrderByWithRelationInput =
+      sort === "oldest"
+        ? { createdAt: Prisma.SortOrder.asc }
+        : { createdAt: Prisma.SortOrder.desc };
+
+    const [clients, total] = await Promise.all([
+      prisma.client.findMany({
+        where,
+        orderBy,
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          companyName: true,
+          email: true,
+          phone: true,
+          preferredContact: true,
+          leadSource: true,
+          createdAt: true,
+        },
+      }),
+      prisma.client.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      data: clients,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error("GET /clients failed:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
 
 export async function POST(req: Request) {
   try {

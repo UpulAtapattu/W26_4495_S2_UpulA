@@ -8,24 +8,17 @@ import {
   ScrollArea,
   Center,
   Box,
-  ActionIcon,
-  Badge,
-  Collapse,
-  Stack,
+  Pagination,
+  Flex,
+  Select,
 } from "@mantine/core";
 
-import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import {
-  IoSearchOutline,
-  IoChevronDown,
-  IoChevronForward,
-} from "react-icons/io5";
-
-type Props = {
-  clients: Client[];
-};
+import { IoFilterOutline, IoSearchOutline } from "react-icons/io5";
+import Loader from "../UI/Loader";
+import { useClients } from "@/hooks/useClient";
+import { useState } from "react";
 
 export type Client = {
   id: string;
@@ -39,13 +32,31 @@ export type Client = {
   createdAt: string;
 };
 
+export type MetaData = {
+  limit: number;
+  page: number;
+  total: number;
+  totalPages: number;
+};
+
 export const getClientName = (c: Client) => `${c.firstName} ${c.lastName}`;
 
-export default function ClientsTable({ clients }: Props) {
-  const [query, setQuery] = useState("");
+export default function ClientsTable() {
   const router = useRouter();
 
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<"newest" | "oldest">("newest");
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+  });
+
+  const { clients, meta, loading } = useClients({
+    query,
+    page: pagination.page,
+    limit: pagination.limit,
+    sort,
+  });
 
   const renderPreferredContact = (method?: "call" | "sms" | "email") => {
     if (!method) return "—";
@@ -54,87 +65,106 @@ export default function ClientsTable({ clients }: Props) {
 
   const renderValue = (value?: string) => (value?.length ? value : "—");
 
-  const filteredClients = useMemo(() => {
-    const q = query.toLowerCase().trim();
-
-    if (!q) return clients;
-
-    return clients.filter((c) =>
-      [getClientName(c), c.email, c.phone].join(" ").toLowerCase().includes(q),
-    );
-  }, [clients, query]);
-  if (!clients.length) {
-    return (
-      <Center py="xl">
-        <Text c="dimmed">No clients found</Text>
-      </Center>
-    );
-  }
+  const handleSearch = (value: string) => {
+    setQuery(value);
+    setPagination((prev) => ({
+      ...prev,
+      page: 1,
+    }));
+  };
 
   return (
     <Box>
-      {/* Search */}
-      <Group mb="md">
-        <TextInput
-          placeholder="Search clients…"
-          leftSection={<IoSearchOutline size={16} />}
-          value={query}
-          onChange={(e) => setQuery(e.currentTarget.value)}
-          w={300}
-        />
+      <Group justify="space-between" mb="md">
+        <Text size="xl" fw={400}>
+          Clients
+        </Text>
+        <Group gap="sm">
+          <TextInput
+            placeholder="Search clients"
+            leftSection={<IoSearchOutline size={16} />}
+            radius="md"
+            onChange={(e) => handleSearch(e.target.value)}
+          />
+
+          <Select
+            placeholder="Sort by"
+            leftSection={<IoFilterOutline />}
+            value={sort}
+            data={[
+              { value: "newest", label: "Newest" },
+              { value: "oldest", label: "Oldest" },
+            ]}
+            onChange={(value) => setSort(value as "newest" | "oldest")}
+            radius="md"
+          />
+        </Group>
       </Group>
 
-      {/* Table */}
-      <ScrollArea>
-        <Table striped highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Client</Table.Th>
-              <Table.Th>Company</Table.Th>
-              <Table.Th>Email</Table.Th>
-              <Table.Th>Phone</Table.Th>
-              <Table.Th>Preferred</Table.Th>
-              <Table.Th>Lead source</Table.Th>
-              <Table.Th>Created</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {filteredClients.map((client) => (
-              <Table.Tr
-                key={client.id}
-                onClick={() => router.push(`/clients/${client.id}`)}
-                style={{ cursor: "pointer" }}
-              >
-                <Table.Td>
-                  <Text fw={500}>{getClientName(client)}</Text>
-                </Table.Td>
-
-                <Table.Td>{renderValue(client.companyName)}</Table.Td>
-
-                <Table.Td>{client.email}</Table.Td>
-
-                <Table.Td>{client.phone}</Table.Td>
-
-                <Table.Td>
-                  {renderPreferredContact(client.preferredContact)}
-                </Table.Td>
-
-                <Table.Td>{renderValue(client.leadSource)}</Table.Td>
-
-                <Table.Td>
-                  {new Date(client.createdAt).toLocaleDateString()}
-                </Table.Td>
-              </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
-      </ScrollArea>
-
-      {/* Empty search result */}
-      {!filteredClients.length && (
+      {loading ? (
+        <Loader />
+      ) : !loading && !clients.length ? (
         <Center py="md">
           <Text c="dimmed">No matching clients</Text>
         </Center>
+      ) : (
+        <ScrollArea mih="60vh">
+          <Table striped highlightOnHover withTableBorder withRowBorders>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Client</Table.Th>
+                <Table.Th>Company</Table.Th>
+                <Table.Th>Email</Table.Th>
+                <Table.Th>Phone</Table.Th>
+                <Table.Th>Preferred</Table.Th>
+                <Table.Th>Lead source</Table.Th>
+                <Table.Th>Created</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {clients.map((client) => (
+                <Table.Tr
+                  key={client.id}
+                  onClick={() => router.push(`/clients/${client.id}`)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <Table.Td>
+                    <Text fw={500}>{getClientName(client)}</Text>
+                  </Table.Td>
+
+                  <Table.Td>{renderValue(client.companyName)}</Table.Td>
+
+                  <Table.Td>{client.email}</Table.Td>
+
+                  <Table.Td>{client.phone}</Table.Td>
+
+                  <Table.Td>
+                    {renderPreferredContact(client.preferredContact)}
+                  </Table.Td>
+
+                  <Table.Td>{renderValue(client.leadSource)}</Table.Td>
+
+                  <Table.Td>
+                    {new Date(client.createdAt).toLocaleDateString()}
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+
+          <Flex mt="sm" w="100%" justify="flex-end">
+            <Pagination
+              value={meta.page}
+              total={meta.totalPages}
+              onChange={(page) =>
+                setPagination((prev) => ({
+                  ...prev,
+                  page,
+                }))
+              }
+            />
+          </Flex>
+        </ScrollArea>
       )}
     </Box>
   );
