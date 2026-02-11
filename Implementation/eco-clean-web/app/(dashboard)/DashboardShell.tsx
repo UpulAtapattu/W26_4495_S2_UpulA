@@ -28,6 +28,7 @@ import {
   IoPersonOutline,
 } from "react-icons/io5";
 import ClientPropertyModal from "../components/ClientModal";
+import NewJobModal from "../components/popups/JobModal";
 
 export default function DashboardShell({
   children,
@@ -36,6 +37,7 @@ export default function DashboardShell({
 }) {
   const [opened, { toggle }] = useDisclosure(true);
   const [clientPopoverOpened, setClientPopoverOpened] = useState(false);
+  const [jobPopoverOpened, setJobPopoverOpened] = useState(false);
   const pathname = usePathname();
 
   return (
@@ -96,6 +98,7 @@ export default function DashboardShell({
                     variant="light"
                     mt="sm"
                     leftSection={<IoHandLeftOutline />}
+                    onClick={() => setJobPopoverOpened(true)}
                     fullWidth
                   >
                     Job
@@ -154,6 +157,10 @@ export default function DashboardShell({
           <ClientPropertyModal
             opened={clientPopoverOpened}
             onClose={() => setClientPopoverOpened(false)}
+          />
+          <NewJobModal
+            opened={jobPopoverOpened}
+            onClose={() => setJobPopoverOpened(false)}
           />
           {children}
         </Container>
