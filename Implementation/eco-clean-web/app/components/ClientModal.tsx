@@ -1,5 +1,4 @@
 "use client";
-import { useState } from "react";
 import {
   Modal,
   TextInput,
@@ -11,7 +10,6 @@ import {
   Group,
   Title,
   Text,
-  Accordion,
   Paper,
   Divider,
   Textarea,
@@ -23,7 +21,6 @@ import {
   IoGlobeOutline,
   IoMailOpenOutline,
   IoMegaphoneOutline,
-  IoPhoneLandscapeOutline,
   IoTextOutline,
 } from "react-icons/io5";
 
@@ -32,14 +29,7 @@ type Props = {
   onClose: () => void;
 };
 
-type Address = {
-  street1: string;
-  street2: string;
-  city: string;
-  province: string;
-  postalCode: string;
-  country: string;
-};
+
 
 export default function ClientPropertyModal({ opened, onClose }: Props) {
   const form = useForm({
@@ -100,45 +90,14 @@ export default function ClientPropertyModal({ opened, onClose }: Props) {
         throw new Error(data.message || "Something went wrong");
       }
 
-      // ✅ success
       form.reset();
       onClose?.();
     } catch (error) {
       console.log(error);
-      // form.setErrors({
-      //   email: error.message, // example mapping
-      // });
+
     }
   };
 
-  const emptyAddress: Address = {
-    street1: "",
-    street2: "",
-    city: "",
-    province: "",
-    postalCode: "",
-    country: "",
-  };
-
-  const [addresses, setAddresses] = useState<Address[]>([emptyAddress]);
-
-  const addAddress = () => {
-    setAddresses((prev) => [...prev, emptyAddress]);
-  };
-
-  const updateAddress = (
-    index: number,
-    field: keyof Address,
-    value: string,
-  ) => {
-    setAddresses((prev) =>
-      prev.map((addr, i) => (i === index ? { ...addr, [field]: value } : addr)),
-    );
-  };
-
-  const removeAddress = (index: number) => {
-    setAddresses((prev) => prev.filter((_, i) => i !== index));
-  };
 
   return (
     <Modal

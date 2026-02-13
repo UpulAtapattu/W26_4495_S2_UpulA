@@ -18,10 +18,9 @@ import {
   Center,
   Text,
 } from "@mantine/core";
-import useSWR from "swr";
 import { useState } from "react";
 
-import { DateInput, TimeInput, TimePicker } from "@mantine/dates";
+import { DateInput, TimePicker } from "@mantine/dates";
 import { useDebouncedValue } from "@mantine/hooks";
 import {
   IoCalendarOutline,
@@ -38,14 +37,12 @@ import { getClientAddresses, getClients } from "@/lib/api/client";
 import { getStaff } from "@/lib/api/users";
 
 import { Staff } from "@/app/types/staff";
-import { Address } from "@/app/types/address";
 import { Client } from "../tables/ClientTable";
 
 interface Props {
   opened: boolean;
   onClose: () => void;
 }
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function NewJobModal({ opened, onClose }: Props) {
   const queryClient = useQueryClient();
