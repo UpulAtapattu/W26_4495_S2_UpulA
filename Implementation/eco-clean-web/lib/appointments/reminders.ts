@@ -11,7 +11,6 @@ export async function sendEmail(to: string, subject: string, html: string) {
     subject,
     html,
   });
-  console.log(response);
 }
 
 export function reminderTemplate(days: number, date: string, time: string) {
@@ -26,7 +25,7 @@ export function reminderTemplate(days: number, date: string, time: string) {
 
 export async function run5DayReminders(now = new Date()) {
   const target = addDays(now, 5);
-  console.log(target);
+
   const appointments = await prisma.appointment.findMany({
     where: {
       status: "SCHEDULED",
@@ -38,7 +37,6 @@ export async function run5DayReminders(now = new Date()) {
     },
     include: { client: true },
   });
-  console.log(appointments);
 
   for (const appt of appointments) {
     try {
