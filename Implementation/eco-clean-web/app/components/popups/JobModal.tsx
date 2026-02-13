@@ -16,11 +16,12 @@ import {
   Radio,
   Checkbox,
   Center,
+  Text,
 } from "@mantine/core";
 import useSWR from "swr";
 import { useState } from "react";
 
-import { DateInput, TimeInput } from "@mantine/dates";
+import { DateInput, TimeInput, TimePicker } from "@mantine/dates";
 import { useDebouncedValue } from "@mantine/hooks";
 import {
   IoCalendarOutline,
@@ -153,8 +154,8 @@ export default function NewJobModal({ opened, onClose }: Props) {
       opened={opened}
       onClose={onClose}
       size="90%"
-      radius="lg"
       title="New Job"
+      centered
     >
       <form
         onSubmit={form.onSubmit((values) => {
@@ -170,8 +171,11 @@ export default function NewJobModal({ opened, onClose }: Props) {
           mutation.mutate(payload);
         })}
       >
-        <Paper p="sm">
-          <Group justify="flex-end">
+        <Paper>
+          <Group justify="space-between" align="center">
+            <Text fw={500} size="sm">
+              Select Job Type
+            </Text>
             <SegmentedControl
               color="green"
               value={form.values.jobType}
@@ -204,6 +208,7 @@ export default function NewJobModal({ opened, onClose }: Props) {
               ]}
             />
           </Group>
+          <Divider my="md" />
           <TextInput
             leftSection={<IoTextOutline />}
             label="Title"
@@ -277,18 +282,20 @@ export default function NewJobModal({ opened, onClose }: Props) {
                 </Grid.Col>
 
                 <Grid.Col span={4}>
-                  <TimeInput
+                  <TimePicker
                     label="Start time"
                     leftSection={<IoTimeOutline />}
                     {...form.getInputProps("startTime")}
+                    withDropdown
                   />
                 </Grid.Col>
 
                 <Grid.Col span={4}>
-                  <TimeInput
+                  <TimePicker
                     label="End time"
                     leftSection={<IoTimeOutline />}
                     {...form.getInputProps("endTime")}
+                    withDropdown
                   />
                 </Grid.Col>
               </Grid>
@@ -311,21 +318,27 @@ export default function NewJobModal({ opened, onClose }: Props) {
                 <Grid.Col span={4}>
                   <DateInput
                     label="Start date"
+                    placeholder="Select date"
+                    leftSection={<IoCalendarOutline />}
                     {...form.getInputProps("startDate")}
                   />
                 </Grid.Col>
 
                 <Grid.Col span={4}>
-                  <TimeInput
+                  <TimePicker
                     label="Start time"
+                    leftSection={<IoTimeOutline />}
                     {...form.getInputProps("startTime")}
+                    withDropdown
                   />
                 </Grid.Col>
 
                 <Grid.Col span={4}>
-                  <TimeInput
+                  <TimePicker
                     label="End time"
+                    leftSection={<IoTimeOutline />}
                     {...form.getInputProps("endTime")}
+                    withDropdown
                   />
                 </Grid.Col>
               </Grid>
@@ -340,6 +353,7 @@ export default function NewJobModal({ opened, onClose }: Props) {
 
               <Select
                 label="Repeats"
+                leftSection={<IoReloadOutline />}
                 data={[
                   { value: "weekly", label: "Weekly" },
                   { value: "monthly", label: "Monthly" },
@@ -348,25 +362,30 @@ export default function NewJobModal({ opened, onClose }: Props) {
               />
 
               <NumberInput
+                mt="sm"
+                leftSection={<IoReloadOutline />}
                 label="Repeat every (interval)"
                 min={1}
                 {...form.getInputProps("recurrence.interval")}
               />
 
               <Radio.Group
+                mt="sm"
                 label="Ends"
                 {...form.getInputProps("recurrence.endType")}
               >
-                <Stack>
+                <Stack mt="sm">
                   <Radio value="after" label="After" />
 
                   {form.values.recurrence.endType === "after" && (
                     <Group>
                       <NumberInput
                         min={1}
+                        leftSection={<IoTextOutline />}
                         {...form.getInputProps("recurrence.endsAfter")}
                       />
                       <Select
+                        leftSection={<IoCalendarOutline />}
                         data={[
                           { value: "months", label: "Months" },
                           { value: "weeks", label: "Weeks" },
@@ -376,15 +395,20 @@ export default function NewJobModal({ opened, onClose }: Props) {
                     </Group>
                   )}
 
-                  <Radio value="on" label="On date" />
+                  <Radio mt="xs" value="on" label="On date" />
 
                   {form.values.recurrence.endType === "on" && (
-                    <DateInput {...form.getInputProps("recurrence.endsOn")} />
+                    <DateInput
+                      leftSection={<IoCalendarOutline />}
+                      placeholder="Select"
+                      {...form.getInputProps("recurrence.endsOn")}
+                    />
                   )}
                 </Stack>
               </Radio.Group>
 
               <Textarea
+                mt="md"
                 label="Visit instructions"
                 minRows={3}
                 {...form.getInputProps("visitInstructions")}
