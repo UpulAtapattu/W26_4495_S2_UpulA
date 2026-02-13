@@ -19,7 +19,7 @@ import {
 } from "@mantine/core";
 import useSWR from "swr";
 import { useState } from "react";
-import { Address, Client, Staff } from "../tables/ClientTable";
+
 import { DateInput, TimeInput } from "@mantine/dates";
 import { useDebouncedValue } from "@mantine/hooks";
 import {
@@ -35,6 +35,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createJob, CreateJobPayload, JobFormValues } from "@/lib/api/jobs";
 import { getClientAddresses, getClients } from "@/lib/api/client";
 import { getStaff } from "@/lib/api/users";
+
+import { Staff } from "@/app/types/staff";
+import { Address } from "@/app/types/address";
+import { Client } from "../tables/ClientTable";
 
 interface Props {
   opened: boolean;
@@ -249,8 +253,8 @@ export default function NewJobModal({ opened, onClose }: Props) {
           <Select
             mt="sm"
             data={
-              addressesData?.data.map((address: Address) => ({
-                value: address.id,
+              addressesData?.data.map((address) => ({
+                value: address?.id || "",
                 label: `${address.street1}, ${address.city}, ${address.province}`,
               })) || []
             }

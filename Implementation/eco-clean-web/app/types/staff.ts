@@ -1,0 +1,7 @@
+export interface Staff {
+  id: string;
+  name: string;
+  email: string;
+  role: "ADMIN" | "STAFF" | "CLIENT";
+  createdAt: string;
+}

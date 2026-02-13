@@ -1,8 +1,39 @@
+import { Client } from "@/app/components/tables/ClientTable";
+import { ListResponse } from "@/app/types/api";
+
 export type GetClientsParams = {
   q?: string;
   page?: number;
   limit?: number;
 };
+
+export interface ApiListResponse<T> {
+  data: T[];
+}
+
+export interface ClientsResponse {
+  data: Client[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface AddressResponse {
+  id: string;
+  street1: string;
+  city: string;
+  province: string;
+}
+
+export interface StaffResponse {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
 
 export async function apiClient<T>(
   url: string,
@@ -28,11 +59,11 @@ export async function apiClient<T>(
 }
 
 export function getClients(query: string) {
-  return apiClient(`/api/clients?q=${encodeURIComponent(query)}`);
+  return apiClient<ClientsResponse>(
+    `/api/clients?q=${encodeURIComponent(query)}`,
+  );
 }
 
 export function getClientAddresses(clientId: string) {
-  console.log("Fetching addresses for client ID:", clientId);
-  return apiClient(`/api/clients/${clientId}/addresses`);
+  return apiClient<ListResponse<Address>>(`/api/clients/${clientId}/addresses`);
 }
-
