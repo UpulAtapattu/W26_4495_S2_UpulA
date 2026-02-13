@@ -1,3 +1,20 @@
+2026-02-08 6:00-8:00pm Implemented client listing with Prisma pagination and sorting
+2026-02-08 8:30-10:00pm Integrated dynamic orderBy logic (oldest/newest toggle)
+2026-02-09 4:30-6:30pm Connected Mantine Select to backend client data
+2026-02-09 7:00-9:00pm Implemented searchable Select with onSearchChange filtering
+2026-02-10 3:30-5:30pm Structured dashboard layout using Mantine Grid and Stack
+2026-02-10 6:00-8:30pm Implemented sidebar collapse behavior (Mantine v6 responsive layout)
+2026-02-11 2:00-4:00pm Designed structured form layout (Primary Contact & section grouping)
+2026-02-11 5:00-7:00pm Connected form submission to backend API endpoints
+2026-02-11 8:00-9:30pm Improved spacing, hierarchy, and alignment for form UI
+2026-02-12 1:00-3:00pm Integrated FullCalendar with Mantine dashboard layout
+2026-02-12 3:30-5:00pm Configured calendar plugins (timeGrid, dayGrid, interaction)
+2026-02-12 6:00-7:30pm Debugged inconsistent page sizing and standardized container widths
+2026-02-12 8:00-9:00pm Generated database dump process for team collaboration
+2026-02-12 9:00-10:00pm Refactored reusable layout structure for scalability
+
+
+-- Progress Report 1 --
 2026-01-27 4:30pm-6:30pm Setup authentication with next js
 2026-01-27 8:30pm-10:30pm Implemented user get,edit,delete,create functions on the API
 2026-02-03 10:30pm-1:30pm Connect mobile app to the web API

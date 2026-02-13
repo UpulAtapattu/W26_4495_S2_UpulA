@@ -1,3 +1,85 @@
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Prisma client.findMany with filtering, sorting, pagination
+Value Addition: Built scalable backend query logic with dynamic orderBy and efficient skip/take pagination
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Implementing oldest/newest sorting toggle
+Value Addition: Enabled dynamic server-side sorting with clean query structure
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Fetch data + total count simultaneously
+Value Addition: Optimized performance using Promise.all() to prevent sequential DB calls
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Mantine Select with dynamic client data
+Value Addition: Structured mapping of backend client records into Select component format
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Searchable Select with onSearchChange
+Value Addition: Enabled live client filtering and improved UX for large datasets
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Handling page changes in pagination
+Value Addition: Connected frontend pagination state with backend skip/take logic
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Sidebar collapse behavior (Mantine v6)
+Value Addition: Implemented responsive sidebar with controlled layout resizing
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Maintaining consistent dashboard width across pages
+Value Addition: Standardized Container sizing and layout structure
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Structuring complex form layout with Grid + Stack
+Value Addition: Improved readability, spacing hierarchy, and maintainability of form components
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Dividing form into logical sections (Primary contact, etc.)
+Value Addition: Increased UX clarity and better information grouping
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Connecting Mantine form to backend API
+Value Addition: Clean separation between UI structure and API submission logic
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: FullCalendar integration inside Mantine layout
+Value Addition: Embedded scheduling system while preserving dashboard consistency
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: FullCalendar plugins configuration (timeGrid, dayGrid, interaction)
+Value Addition: Enabled multi-view calendar functionality with proper plugin setup
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Matching UI to screenshot reference
+Value Addition: Translated design references into Mantine component architecture
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Replicating UI elements from image examples
+Value Addition: Reduced implementation ambiguity and accelerated frontend development
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Database dump for teammate
+Value Addition: Provided environment sharing workflow for collaborative development
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Debugging inconsistent page sizing
+Value Addition: Identified layout container inconsistencies and improved UI uniformity
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Improving form spacing and alignment
+Value Addition: Increased professional UI polish and consistency across components
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Handling loading states in Select and data fetch
+Value Addition: Improved user experience with better async state handling
+
+AI: ChatGPT 5.2 (Go Plan)
+Prompt: Structuring reusable layout patterns for admin pages
+Value Addition: Established scalable layout system for future feature expansion
+
+-- Progress Report 1 --
+
 AI: ChatGPT 5.2 Plus
 Prompt: RN global style system
 Value Addition: Reduced styling repetition across the app
