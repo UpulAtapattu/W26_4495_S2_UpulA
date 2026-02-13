@@ -8,8 +8,11 @@ import {
   Divider,
   Flex,
   NavLink,
+  Paper,
   Popover,
   Stack,
+  Text,
+  Tooltip,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { signOut } from "next-auth/react";
@@ -20,6 +23,7 @@ import {
   IoAddCircleOutline,
   IoBriefcaseOutline,
   IoCogOutline,
+  IoHammerOutline,
   IoHandLeftOutline,
   IoHomeOutline,
   IoLogOutOutline,
@@ -35,7 +39,7 @@ export default function DashboardShell({
 }: {
   children: React.ReactNode;
 }) {
-  const [opened, { toggle }] = useDisclosure(true);
+  // const [opened, { toggle }] = useDisclosure(true);
   const [clientPopoverOpened, setClientPopoverOpened] = useState(false);
   const [jobPopoverOpened, setJobPopoverOpened] = useState(false);
   const pathname = usePathname();
@@ -44,7 +48,7 @@ export default function DashboardShell({
     <AppShell
       padding="md"
       navbar={{
-        width: opened ? 240 : 72,
+        width: 72,
         breakpoint: "sm",
       }}
     >
@@ -52,97 +56,88 @@ export default function DashboardShell({
         <Stack h="100%" justify="space-between">
           <Stack gap="xs">
             <Flex justify="center">
-              <ActionIcon
+              {/* <ActionIcon
                 variant="subtle"
                 onClick={toggle}
                 mb="sm"
                 aria-label="Toggle sidebar"
               >
                 <IoMenu size={20} />
-              </ActionIcon>
+              </ActionIcon> */}
             </Flex>
             <Flex align="center" justify="center">
-              <Popover width={200} position="right" withArrow shadow="md">
+              <Popover position="right" withArrow shadow="md">
                 <Popover.Target>
-                  {opened ? (
-                    <Button
-                      leftSection={<IoAddCircleOutline size={18} />}
-                      onClick={toggle}
-                      fullWidth
-                    >
-                      Create New
-                    </Button>
-                  ) : (
-                    <ActionIcon
-                      variant="filled"
-                      onClick={toggle}
-                      mb="sm"
-                      aria-label="Toggle sidebar"
-                    >
-                      <IoAddCircleOutline size={20} />
-                    </ActionIcon>
-                  )}
+                  <ActionIcon
+                    variant="filled"
+                    mb="sm"
+                    aria-label="Toggle sidebar"
+                  >
+                    <IoAddCircleOutline size={20} />
+                  </ActionIcon>
                 </Popover.Target>
-                <Popover.Dropdown>
-                  <Button
-                    color="blue"
-                    variant="light"
-                    leftSection={<IoPersonOutline />}
-                    onClick={() => setClientPopoverOpened(true)}
-                    fullWidth
-                  >
-                    Client
-                  </Button>
-                  <Button
-                    color="grey"
-                    variant="light"
-                    mt="sm"
-                    leftSection={<IoHandLeftOutline />}
-                    onClick={() => setJobPopoverOpened(true)}
-                    fullWidth
-                  >
-                    Job
-                  </Button>
+                <Popover.Dropdown p="xs">
+                  <Flex gap="md">
+                    <ActionIcon
+                      variant="light"
+                      size="xl"
+                      onClick={() => setJobPopoverOpened(true)}
+                    >
+                      <IoHammerOutline />
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="light"
+                      color="orange"
+                      size="xl"
+                      onClick={() => setClientPopoverOpened(true)}
+                    >
+                      <IoPersonOutline />
+                    </ActionIcon>
+                  </Flex>
                 </Popover.Dropdown>
               </Popover>
             </Flex>
-            <NavLink
-              component={Link}
-              href="/"
-              bdrs="md"
-              label={opened ? "Dashboard" : undefined}
-              leftSection={<IoHomeOutline />}
-              active={pathname === "/"}
-            />
-            <NavLink
-              component={Link}
-              href="/clients"
-              bdrs="md"
-              label={opened ? "Clients" : undefined}
-              leftSection={<IoPeopleOutline />}
-              active={pathname.startsWith("/clients")}
-            />
-            <NavLink
-              component={Link}
-              href="/users"
-              bdrs="md"
-              label={opened ? "Employees" : undefined}
-              leftSection={<IoBriefcaseOutline />}
-              active={pathname.startsWith("/users")}
-            />
-            <NavLink
-              component={Link}
-              href="/settings"
-              bdrs="md"
-              label={opened ? "Settings" : undefined}
-              leftSection={<IoCogOutline />}
-              active={pathname.startsWith("/settings")}
-            />
+            <Tooltip label="Dashboard" position="right" withArrow>
+              <NavLink
+                component={Link}
+                href="/"
+                bdrs="md"
+                leftSection={<IoHomeOutline />}
+                active={pathname === "/"}
+              />
+            </Tooltip>
+            <Tooltip label="Clients" position="right" withArrow>
+              <NavLink
+                component={Link}
+                href="/clients"
+                bdrs="md"
+                leftSection={<IoPeopleOutline />}
+                active={pathname.startsWith("/clients")}
+              />
+            </Tooltip>
+            <Tooltip label="Employees" position="right" withArrow>
+              <NavLink
+                component={Link}
+                href="/users"
+                bdrs="md"
+                leftSection={<IoBriefcaseOutline />}
+                active={pathname.startsWith("/users")}
+              />
+            </Tooltip>
+            <Tooltip label="Settings" position="right" withArrow>
+              <NavLink
+                component={Link}
+                href="/settings"
+                bdrs="md"
+                leftSection={<IoCogOutline />}
+                active={pathname.startsWith("/settings")}
+              />
+            </Tooltip>
+
             <Box>
               <Divider mb="xs" />
               <NavLink
                 component="button"
-                label={opened ? "Log out" : undefined}
                 leftSection={<IoLogOutOutline size={18} />}
                 color="red"
                 bdrs="md"

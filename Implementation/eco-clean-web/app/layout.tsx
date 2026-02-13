@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Providers from "./providers/providers";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
+import "@mantine/dropzone/styles.css";
 import { MantineProvider } from "@mantine/core";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { QueryProvider } from "@/lib/query-provider";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -31,7 +33,9 @@ export default function RootLayout({
           theme={{ defaultRadius: "md", primaryColor: "green" }}
           defaultColorScheme="light"
         >
-          <Providers>{children}</Providers>
+          <QueryProvider>
+            <Providers>{children}</Providers>
+          </QueryProvider>
         </MantineProvider>
       </body>
     </html>

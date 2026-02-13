@@ -7,17 +7,17 @@ datasource db {
 }
 
 model User {
-  id                  String        @id @default(uuid())
-  name                String
-  email               String        @unique
-  role                Role
-  createdAt           DateTime      @default(now())
-  password            String
-  appointmentsAsStaff Appointment[] @relation("StaffAppointments")
+  id          String   @id @default(uuid())
+  name        String
+  email       String   @unique
+  role        Role
+  createdAt   DateTime @default(now())
+  password    String
+  jobsAsStaff Job[]    @relation("StaffAppointments")
 }
 
 model Client {
-  id               String        @id @default(uuid())
+  id               String       @id @default(uuid())
   title            String?
   firstName        String
   lastName         String
@@ -26,10 +26,10 @@ model Client {
   phone            String
   preferredContact String
   leadSource       String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
   addresses        Address[]
-  appointments     Appointment[]
+  jobs             Job[]
   notes            ClientNote[]
 }
 
@@ -42,38 +42,103 @@ model ClientNote {
 }
 
 model Address {
-  id           String        @id @default(uuid())
-  clientId     String
-  street1      String
-  street2      String?
-  city         String
-  province     String
-  postalCode   String
-  country      String
-  isPrimary    Boolean       @default(false)
-  isBilling    Boolean       @default(false)
-  createdAt    DateTime      @default(now())
-  client       Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  clientId   String
+  street1    String
+  street2    String?
+  city       String
+  province   String
+  postalCode String
+  country    String
+  isPrimary  Boolean  @default(false)
+  isBilling  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  jobs       Job[]
+}
+
+model Job {
+  id    String  @id @default(uuid())
+  title String
+  type  JobType
+
+  clientId  String
+  staffId   String?
+  addressId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client  Client  @relation(fields: [clientId], references: [id])
+  staff   User?   @relation("StaffAppointments", fields: [staffId], references: [id])
+  address Address @relation(fields: [addressId], references: [id])
+
   appointments Appointment[]
+  lineItems    JobLineItem[]
+  recurrence   Recurrence?
+  notes        JobNote[]
+}
+
+enum JobType {
+  ONE_OFF
+  RECURRING
 }
 
 model Appointment {
-  id             String            @id @default(uuid())
-  startTime      DateTime          @db.Timestamptz(6)
-  endTime        DateTime          @db.Timestamptz(6)
-  status         AppointmentStatus
-  clientId       String
-  staffId        String
-  createdAt      DateTime          @default(now()) @db.Timestamptz(6)
-  completionSent Boolean           @default(false)
-  price          Float?
-  reminder1dSent Boolean           @default(false)
-  reminder5dSent Boolean           @default(false)
-  addressId      String
-  address        Address           @relation(fields: [addressId], references: [id])
-  client         Client            @relation(fields: [clientId], references: [id])
-  staff          User              @relation("StaffAppointments", fields: [staffId], references: [id])
-  notes          VisitNote[]
+  id        String            @id @default(uuid())
+  jobId     String
+  startTime DateTime          @db.Timestamptz(6)
+  endTime   DateTime          @db.Timestamptz(6)
+  status    AppointmentStatus
+  createdAt DateTime          @default(now()) @db.Timestamptz(6)
+
+  completionSent Boolean @default(false)
+  reminder1dSent Boolean @default(false)
+  reminder5dSent Boolean @default(false)
+
+  job   Job         @relation(fields: [jobId], references: [id])
+  notes VisitNote[]
+}
+
+model Recurrence {
+  id        String    @id @default(uuid())
+  jobId     String    @unique
+  frequency String // weekly, monthly
+  interval  Int // every X weeks
+  endsOn    DateTime?
+  endsAfter Int?
+
+  job Job @relation(fields: [jobId], references: [id])
+}
+
+model JobLineItem {
+  id        String @id @default(uuid())
+  jobId     String
+  name      String
+  quantity  Int
+  unitCost  Float?
+  unitPrice Float?
+  total     Float?
+
+  job Job @relation(fields: [jobId], references: [id])
+}
+
+model JobNote {
+  id        String   @id @default(uuid())
+  jobId     String
+  content   String?
+  createdAt DateTime @default(now())
+
+  job    Job            @relation(fields: [jobId], references: [id])
+  images JobNoteImage[]
+}
+
+model JobNoteImage {
+  id     String @id @default(uuid())
+  noteId String
+  url    String
+
+  note JobNote @relation(fields: [noteId], references: [id])
 }
 
 model VisitNote {
