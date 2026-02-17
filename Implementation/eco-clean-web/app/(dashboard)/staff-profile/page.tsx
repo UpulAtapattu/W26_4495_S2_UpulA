@@ -1,20 +1,22 @@
 "use client";
 
 import {
-  ActionIcon,
-  Avatar,
-  Box,
-  Button,
-  Card,
-  Container,
-  Grid,
-  Group,
-  Stack,
-  Text,
-  TextInput,
-  Title,
+    ActionIcon,
+    Avatar,
+    Box,
+    Button,
+    Card,
+    Container,
+    Grid,
+    Group,
+    Stack,
+    Text,
+    TextInput,
+    Title,
 } from "@mantine/core";
 import { IconSettings } from "@tabler/icons-react";
+import { useRouter } from "next/navigation";
+
 
 export default function StaffProfilePage() {
   // Replace with real data later (session / API)
@@ -25,7 +27,12 @@ export default function StaffProfilePage() {
     address: "12667 110A Avenue, Surrey, BC",
     postalCode: "V3V 0A1",
     emergencyContact: "Ayesha — +1 (604) 555-0123",
+
+
   };
+
+  const router = useRouter();
+
 
   return (
     <Container size="lg" py="xl">
@@ -91,10 +98,13 @@ export default function StaffProfilePage() {
           </Grid.Col>
         </Grid>
 
-        {/* Bottom buttons */}
+
+      </Card>
+
+       {/* Bottom buttons */}
         <Grid mt="xl" gutter="lg">
           <Grid.Col span={{ base: 12, sm: 6 }}>
-            <BigActionButton onClick={() => console.log("Enter time")}>
+            <BigActionButton onClick={() => router.push("/enter-time")}>
               Enter Time
             </BigActionButton>
           </Grid.Col>
@@ -112,12 +122,12 @@ export default function StaffProfilePage() {
           </Grid.Col>
 
           <Grid.Col span={{ base: 12, sm: 6 }}>
-            <BigActionButton onClick={() => console.log("Apply leave")}>
+            <BigActionButton onClick={() => router.push("/apply-leave")}>
               Apply Leave
             </BigActionButton>
           </Grid.Col>
         </Grid>
-      </Card>
+
     </Container>
   );
 }
