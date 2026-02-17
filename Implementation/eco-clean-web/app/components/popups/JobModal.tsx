@@ -17,49 +17,63 @@ import {
   Checkbox,
   Center,
   Text,
+  Card,
+  MultiSelect,
+  Flex,
 } from "@mantine/core";
-import { useState } from "react";
-
 import { DateInput, TimePicker } from "@mantine/dates";
+import { Dropzone } from "@mantine/dropzone";
 import { useDebouncedValue } from "@mantine/hooks";
+import { useForm } from "@mantine/form";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import {
   IoCalendarOutline,
+  IoImageOutline,
   IoPersonOutline,
   IoRadioButtonOffOutline,
   IoReloadOutline,
   IoTextOutline,
   IoTimeOutline,
 } from "react-icons/io5";
-import { useForm } from "@mantine/form";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { DateSelectArg } from "@fullcalendar/core";
 import { createJob, CreateJobPayload, JobFormValues } from "@/lib/api/jobs";
 import { getClientAddresses, getClients } from "@/lib/api/client";
 import { getStaff } from "@/lib/api/users";
-
 import { Staff } from "@/app/types/staff";
 import { Client } from "../tables/ClientTable";
+import { CalendarSelection } from "@/types";
 
 interface Props {
   opened: boolean;
   onClose: () => void;
+  selectedInfo: CalendarSelection;
 }
 
-export default function NewJobModal({ opened, onClose }: Props) {
+type LineItem = {
+  id: string;
+  name: string;
+  quantity: number;
+  unitCost: number;
+  unitPrice: number;
+  description: string;
+};
+
+export default function NewJobModal({ opened, onClose, selectedInfo }: Props) {
   const queryClient = useQueryClient();
+  console.log(selectedInfo);
   const form = useForm<JobFormValues>({
     initialValues: {
       title: "",
       clientId: "",
-      staffId: "",
+      staffId: [],
       addressId: "",
       jobType: "ONE_OFF",
-
       startDate: null,
       startTime: "",
       endTime: "",
       isAnytime: false,
       visitInstructions: "",
-
       recurrence: {
         frequency: "weekly",
         interval: 1,
@@ -68,55 +82,26 @@ export default function NewJobModal({ opened, onClose }: Props) {
         endsUnit: "months",
         endsOn: null,
       },
-
       lineItems: [],
       notes: "",
     },
-    validate: {
-      title: (value) =>
-        value.trim().length < 3 ? "Title must be at least 3 characters" : null,
-      clientId: (value) => (!value ? "Client is required" : null),
-      staffId: (value) => (!value ? "Assignee is required" : null),
-      startDate: (value) => (!value ? "Start date is required" : null),
-      startTime: (value, values) =>
-        !values.isAnytime && !value
-          ? "Start time required unless Anytime"
-          : null,
-      endTime: (value, values) => {
-        if (values.isAnytime) return null;
-        if (!value) return "End time is required";
-
-        if (values.startTime && value <= values.startTime)
-          return "End time must be after start time";
-
-        return null;
-      },
-      recurrence: {
-        interval: (value, values) =>
-          values.jobType === "RECURRING" && (!value || value < 1)
-            ? "Interval must be at least 1"
-            : null,
-
-        endsAfter: (value, values) =>
-          values.jobType === "RECURRING" &&
-          values.recurrence.endType === "after" &&
-          (!value || value < 1)
-            ? "Must be at least 1"
-            : null,
-
-        endsOn: (value, values) =>
-          values.jobType === "RECURRING" &&
-          values.recurrence.endType === "on" &&
-          !value
-            ? "End date required"
-            : null,
-      },
-    },
   });
+
   const [searchClients, setSearchClients] = useState("");
-  const [debouncedSearchClients] = useDebouncedValue(searchClients, 300);
   const [searchAssignees, setSearchAssignees] = useState("");
+  const [debouncedSearchClients] = useDebouncedValue(searchClients, 300);
   const [debouncedSearchAssignees] = useDebouncedValue(searchAssignees, 300);
+
+  const [items, setItems] = useState<LineItem[]>([
+    {
+      id: crypto.randomUUID(),
+      name: "",
+      quantity: 1,
+      unitCost: 0,
+      unitPrice: 0,
+      description: "",
+    },
+  ]);
 
   const { data: clientsData } = useQuery({
     queryKey: ["clients", debouncedSearchClients],
@@ -125,7 +110,7 @@ export default function NewJobModal({ opened, onClose }: Props) {
 
   const { data: staffData } = useQuery({
     queryKey: ["staff", debouncedSearchAssignees],
-    queryFn: () => getStaff(),
+    queryFn: getStaff,
   });
 
   const { data: addressesData } = useQuery({
@@ -138,42 +123,263 @@ export default function NewJobModal({ opened, onClose }: Props) {
     mutationFn: createJob,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
-      onClose();
       form.reset();
-    },
-    onError: (error) => {
-      console.log(error);
-      alert(error);
+      onClose();
     },
   });
+
+  const updateItem = (id: string, field: keyof LineItem, value: any) => {
+    setItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item)),
+    );
+  };
+
+  const addItem = () => {
+    setItems((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        name: "",
+        quantity: 1,
+        unitCost: 0,
+        unitPrice: 0,
+        description: "",
+      },
+    ]);
+  };
+
+  useEffect(() => {
+    if (!selectedInfo?.start || !selectedInfo?.end) return;
+
+    const start = selectedInfo.start;
+    const end = selectedInfo.end;
+
+    const strippedDate = new Date(
+      start.getFullYear(),
+      start.getMonth(),
+      start.getDate(),
+    );
+
+    const startTime = start.toTimeString().slice(0, 5);
+    const endTime = end.toTimeString().slice(0, 5);
+
+    if (
+      form.values.startDate?.getTime() === strippedDate.getTime() &&
+      form.values.startTime === startTime &&
+      form.values.endTime === endTime
+    ) {
+      return;
+    }
+
+    form.setValues({
+      startDate: strippedDate,
+      startTime,
+      endTime,
+    });
+  }, [selectedInfo?.start?.getTime(), selectedInfo?.end?.getTime()]);
+
+  const handleOnSubmit = (values) => {
+    console.log("info", selectedInfo);
+    console.log("values", values);
+    const data = {
+      title: form.values.title,
+      clientId: form.values.clientId,
+      staffId: form.values.staffId,
+      addressId: form.values.addressId,
+      jobType: form.values.jobType,
+      startDate: form.values.startDate,
+      startTime: form.values.startTime,
+      endTime: form.values.endTime,
+      isAnytime: form.values.isAnytime,
+      recurrence: form.values.recurrence,
+      visitInstructions: form.values.visitInstructions,
+    };
+    createJob(data);
+  };
+
+  const renderLineItems = () =>
+    items.map((item, index) => {
+      const total = item.quantity * item.unitPrice;
+
+      return (
+        <Card withBorder key={item.id} mt={index ? "xs" : 0}>
+          <Grid align="flex-end">
+            <Grid.Col span={12}>
+              <TextInput
+                label="Name"
+                value={item.name}
+                onChange={(e) => updateItem(item.id, "name", e.target.value)}
+              />
+            </Grid.Col>
+
+            <Grid.Col span={3}>
+              <NumberInput
+                label="Quantity"
+                min={1}
+                value={item.quantity}
+                onChange={(val) => updateItem(item.id, "quantity", Number(val))}
+              />
+            </Grid.Col>
+
+            <Grid.Col span={3}>
+              <NumberInput
+                label="Unit cost"
+                prefix="$"
+                decimalScale={2}
+                value={item.unitCost}
+                onChange={(val) => updateItem(item.id, "unitCost", Number(val))}
+              />
+            </Grid.Col>
+
+            <Grid.Col span={3}>
+              <NumberInput
+                label="Unit price"
+                prefix="$"
+                decimalScale={2}
+                value={item.unitPrice}
+                onChange={(val) =>
+                  updateItem(item.id, "unitPrice", Number(val))
+                }
+              />
+            </Grid.Col>
+
+            <Grid.Col span={3}>
+              <TextInput
+                label="Total"
+                value={`$${total.toFixed(2)}`}
+                readOnly
+              />
+            </Grid.Col>
+          </Grid>
+
+          <Textarea
+            mt="sm"
+            placeholder="Description"
+            value={item.description}
+            onChange={(e) => updateItem(item.id, "description", e.target.value)}
+          />
+        </Card>
+      );
+    });
+
+  const renderDateTimeBlock = () => (
+    <Grid>
+      <Grid.Col span={4}>
+        <DateInput
+          label="Start date"
+          leftSection={<IoCalendarOutline />}
+          {...form.getInputProps("startDate")}
+        />
+      </Grid.Col>
+
+      <Grid.Col span={4}>
+        <TimePicker
+          label="Start time"
+          leftSection={<IoTimeOutline />}
+          format="12h"
+          withDropdown
+          {...form.getInputProps("startTime")}
+        />
+      </Grid.Col>
+
+      <Grid.Col span={4}>
+        <TimePicker
+          label="End time"
+          leftSection={<IoTimeOutline />}
+          format="12h"
+          withDropdown
+          {...form.getInputProps("endTime")}
+        />
+      </Grid.Col>
+    </Grid>
+  );
+
+  const renderRecurrenceBlock = () => (
+    <Grid>
+      <Grid.Col span={6}>
+        <Select
+          mt="sm"
+          label="Repeats"
+          leftSection={<IoReloadOutline />}
+          data={[
+            { value: "weekly", label: "Weekly" },
+            { value: "monthly", label: "Monthly" },
+          ]}
+          {...form.getInputProps("recurrence.frequency")}
+        />
+      </Grid.Col>
+      <Grid.Col span={6}>
+        <NumberInput
+          mt="sm"
+          label="Repeat every"
+          min={1}
+          {...form.getInputProps("recurrence.interval")}
+        />
+      </Grid.Col>
+      <Grid.Col span={12}>
+        <Radio.Group
+          mt="sm"
+          label="Ends"
+          {...form.getInputProps("recurrence.endType")}
+        >
+          <Stack mt="sm">
+            <Radio value="after" label="After" />
+
+            {form.values.recurrence.endType === "after" && (
+              <Grid>
+                <Grid.Col span={6}>
+                  <NumberInput
+                    min={1}
+                    {...form.getInputProps("recurrence.endsAfter")}
+                  />
+                </Grid.Col>
+                <Grid.Col span={6}>
+                  <Select
+                    data={[
+                      { value: "months", label: "Months" },
+                      { value: "weeks", label: "Weeks" },
+                    ]}
+                    {...form.getInputProps("recurrence.endsUnit")}
+                  />
+                </Grid.Col>
+              </Grid>
+            )}
+
+            <Radio value="on" label="On date" />
+
+            {form.values.recurrence.endType === "on" && (
+              <DateInput {...form.getInputProps("recurrence.endsOn")} />
+            )}
+          </Stack>
+        </Radio.Group>
+      </Grid.Col>
+    </Grid>
+  );
+
   return (
-    <Modal
-      opened={opened}
-      onClose={onClose}
-      size="90%"
-      title="New Job"
-      centered
-    >
+    <Modal opened={opened} onClose={onClose} size="lg" title="New Job" centered>
       <form
         onSubmit={form.onSubmit((values) => {
-          console.log("Form values:", values);
-          if (!values.startDate) {
-            form.setFieldError("startDate", "Start date required");
-            return;
-          }
-          const payload: CreateJobPayload = {
-            ...values,
-            startDate: values.startDate,
-          };
-          mutation.mutate(payload);
+          console.log(values);
+          handleOnSubmit(values);
+          onClose();
+          // if (!values.startDate) return;
+
+          // const payload: CreateJobPayload = {
+          //   ...values,
+          //   startDate: values.startDate,
+          // };
+
+          // mutation.mutate(payload);
         })}
       >
         <Paper>
-          <Group justify="space-between" align="center">
+          <Group mb="sm" justify="space-between">
             <Text fw={500} size="sm">
               Select Job Type
             </Text>
             <SegmentedControl
+              size="xs"
               color="green"
               value={form.values.jobType}
               onChange={(value) =>
@@ -185,19 +391,18 @@ export default function NewJobModal({ opened, onClose }: Props) {
               data={[
                 {
                   label: (
-                    <Center style={{ gap: 10 }}>
+                    <Center>
                       <IoRadioButtonOffOutline />
-                      <span>One off</span>
+                      <span style={{ marginLeft: 6 }}>One off</span>
                     </Center>
                   ),
-
                   value: "ONE_OFF",
                 },
                 {
                   label: (
-                    <Center style={{ gap: 10 }}>
+                    <Center>
                       <IoReloadOutline />
-                      <span>Recurring</span>
+                      <span style={{ marginLeft: 6 }}>Recurring</span>
                     </Center>
                   ),
                   value: "RECURRING",
@@ -205,22 +410,18 @@ export default function NewJobModal({ opened, onClose }: Props) {
               ]}
             />
           </Group>
-          <Divider my="md" />
+
           <TextInput
             leftSection={<IoTextOutline />}
             label="Title"
-            placeholder="Job title"
             {...form.getInputProps("title")}
           />
+
           <Grid mt="sm">
             <Grid.Col span={6}>
               <Select
                 leftSection={<IoPersonOutline />}
-                searchValue={searchClients}
                 {...form.getInputProps("clientId")}
-                label="Select a client"
-                placeholder="Choose client"
-                nothingFoundMessage="No clients found"
                 data={
                   clientsData?.data.map((client: Client) => ({
                     value: client.id,
@@ -231,16 +432,14 @@ export default function NewJobModal({ opened, onClose }: Props) {
                 }
                 onSearchChange={setSearchClients}
                 searchable
+                label="Client"
               />
             </Grid.Col>
+
             <Grid.Col span={6}>
-              <Select
+              <MultiSelect
                 leftSection={<IoPersonOutline />}
-                searchValue={searchAssignees}
                 {...form.getInputProps("staffId")}
-                label="Select a assignee"
-                placeholder="Choose staff member"
-                nothingFoundMessage="No staff members found"
                 data={
                   staffData?.data.map((staff: Staff) => ({
                     value: staff.id,
@@ -249,170 +448,69 @@ export default function NewJobModal({ opened, onClose }: Props) {
                 }
                 onSearchChange={setSearchAssignees}
                 searchable
+                label="Assignees"
               />
             </Grid.Col>
           </Grid>
+
           <Select
             mt="sm"
+            label="Client Address"
+            {...form.getInputProps("addressId")}
             data={
               addressesData?.data.map((address) => ({
                 value: address?.id || "",
                 label: `${address.street1}, ${address.city}, ${address.province}`,
               })) || []
             }
-            label="Client Address"
-            {...form.getInputProps("addressId")}
-            placeholder="Select Address"
           />
+
           <Divider my="md" />
-          {form.values.jobType === "ONE_OFF" ? (
-            <>
-              {" "}
-              <Grid>
-                <Grid.Col span={4}>
-                  <DateInput
-                    label="Start date"
-                    placeholder="Select date"
-                    leftSection={<IoCalendarOutline />}
-                    {...form.getInputProps("startDate")}
-                  />
-                </Grid.Col>
 
-                <Grid.Col span={4}>
-                  <TimePicker
-                    label="Start time"
-                    leftSection={<IoTimeOutline />}
-                    {...form.getInputProps("startTime")}
-                    withDropdown
-                  />
-                </Grid.Col>
+          <Group mb="sm" justify="space-between">
+            <Text fw={500} size="sm">
+              Services
+            </Text>
+            <Button size="xs" variant="light" color="green" onClick={addItem}>
+              Add Line Item
+            </Button>
+          </Group>
 
-                <Grid.Col span={4}>
-                  <TimePicker
-                    label="End time"
-                    leftSection={<IoTimeOutline />}
-                    {...form.getInputProps("endTime")}
-                    withDropdown
-                  />
-                </Grid.Col>
-              </Grid>
-              <Checkbox
-                my="md"
-                label="Anytime"
-                {...form.getInputProps("isAnytime", {
-                  type: "checkbox",
-                })}
-              />
-              <Textarea
-                label="Visit instructions"
-                minRows={3}
-                {...form.getInputProps("visitInstructions")}
-              />
-            </>
-          ) : (
-            <>
-              <Grid>
-                <Grid.Col span={4}>
-                  <DateInput
-                    label="Start date"
-                    placeholder="Select date"
-                    leftSection={<IoCalendarOutline />}
-                    {...form.getInputProps("startDate")}
-                  />
-                </Grid.Col>
+          {renderLineItems()}
 
-                <Grid.Col span={4}>
-                  <TimePicker
-                    label="Start time"
-                    leftSection={<IoTimeOutline />}
-                    {...form.getInputProps("startTime")}
-                    withDropdown
-                  />
-                </Grid.Col>
+          <Divider my="md" />
 
-                <Grid.Col span={4}>
-                  <TimePicker
-                    label="End time"
-                    leftSection={<IoTimeOutline />}
-                    {...form.getInputProps("endTime")}
-                    withDropdown
-                  />
-                </Grid.Col>
-              </Grid>
+          <Text fw={500} size="sm" mb="sm">
+            Date and Time
+          </Text>
 
-              <Checkbox
-                my="md"
-                label="Anytime"
-                {...form.getInputProps("isAnytime", {
-                  type: "checkbox",
-                })}
-              />
+          {renderDateTimeBlock()}
 
-              <Select
-                label="Repeats"
-                leftSection={<IoReloadOutline />}
-                data={[
-                  { value: "weekly", label: "Weekly" },
-                  { value: "monthly", label: "Monthly" },
-                ]}
-                {...form.getInputProps("recurrence.frequency")}
-              />
+          <Checkbox
+            my="md"
+            label="Anytime"
+            {...form.getInputProps("isAnytime", { type: "checkbox" })}
+          />
 
-              <NumberInput
-                mt="sm"
-                leftSection={<IoReloadOutline />}
-                label="Repeat every (interval)"
-                min={1}
-                {...form.getInputProps("recurrence.interval")}
-              />
+          {form.values.jobType === "RECURRING" && renderRecurrenceBlock()}
 
-              <Radio.Group
-                mt="sm"
-                label="Ends"
-                {...form.getInputProps("recurrence.endType")}
-              >
-                <Stack mt="sm">
-                  <Radio value="after" label="After" />
+          <Textarea
+            mt="md"
+            label="Visit instructions"
+            minRows={3}
+            {...form.getInputProps("visitInstructions")}
+          />
 
-                  {form.values.recurrence.endType === "after" && (
-                    <Group>
-                      <NumberInput
-                        min={1}
-                        leftSection={<IoTextOutline />}
-                        {...form.getInputProps("recurrence.endsAfter")}
-                      />
-                      <Select
-                        leftSection={<IoCalendarOutline />}
-                        data={[
-                          { value: "months", label: "Months" },
-                          { value: "weeks", label: "Weeks" },
-                        ]}
-                        {...form.getInputProps("recurrence.endsUnit")}
-                      />
-                    </Group>
-                  )}
-
-                  <Radio mt="xs" value="on" label="On date" />
-
-                  {form.values.recurrence.endType === "on" && (
-                    <DateInput
-                      leftSection={<IoCalendarOutline />}
-                      placeholder="Select"
-                      {...form.getInputProps("recurrence.endsOn")}
-                    />
-                  )}
-                </Stack>
-              </Radio.Group>
-
-              <Textarea
-                mt="md"
-                label="Visit instructions"
-                minRows={3}
-                {...form.getInputProps("visitInstructions")}
-              />
-            </>
-          )}
+          <Dropzone mt="xs" onDrop={() => {}}>
+            <Flex direction="column" align="center">
+              <IoImageOutline />
+              <Text mt="xs" size="xs">
+                Drag images here or click to select files
+              </Text>
+            </Flex>
+          </Dropzone>
         </Paper>
+
         <Group justify="flex-end" mt="md">
           <Button variant="default" onClick={onClose}>
             Cancel

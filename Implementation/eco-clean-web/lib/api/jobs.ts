@@ -3,32 +3,40 @@ import { apiClient } from "./client";
 export interface CreateJobPayload {
   title: string;
   clientId: string;
-  staffId?: string;
-  addressId?: string;
+  addressId: string;
+  staffIds?: string[]; // many-to-many
+
   jobType: JobType;
+
   startDate: Date;
   startTime?: string;
   endTime?: string;
+
   isAnytime?: boolean;
+  visitInstructions?: string;
+
   recurrence?: {
     frequency: string;
     interval: number;
+
     endType: "after" | "on";
-    endsAfter: number;
-    endsUnit: "weeks" | "months";
-    endsOn: Date | null;
+
+    // Only used when endType === "after"
+    endsAfter?: number;
+
+    // Only used when endType === "on"
+    endsOn?: Date | null;
   };
-  visitInstructions?: string;
 }
 
 export interface JobFormValues {
   title: string;
   clientId: string;
-  staffId: string;
+  staffId: string[];
   addressId: string;
   jobType: "ONE_OFF" | "RECURRING";
 
-  startDate: Date | null;
+  startDate: Date;
   startTime: string;
   endTime: string;
   isAnytime: boolean;
@@ -41,7 +49,7 @@ export interface JobFormValues {
     endType: "after" | "on";
     endsAfter: number;
     endsUnit: "weeks" | "months";
-    endsOn: Date | null;
+    endsOn: Date;
   };
 
   lineItems: LineItem[];

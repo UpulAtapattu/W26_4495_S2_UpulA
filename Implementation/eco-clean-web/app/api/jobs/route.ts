@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { AppointmentStatus } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
@@ -8,7 +9,7 @@ export async function POST(req: NextRequest) {
     const {
       title,
       clientId,
-      staffId,
+      staffId = [],
       addressId,
       jobType,
       startDate,
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
       visitInstructions,
     } = body;
 
-    if (!title || !clientId || !startDate) {
+    if (!title || !clientId || !addressId || !startDate) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 },
@@ -31,25 +32,41 @@ export async function POST(req: NextRequest) {
     const end = new Date(startDate);
 
     if (!isAnytime) {
-      if (startTime) {
-        const [h, m] = startTime.split(":");
-        start.setHours(Number(h), Number(m));
+      if (!startTime || !endTime) {
+        return NextResponse.json(
+          { error: "Start and End time required" },
+          { status: 400 },
+        );
       }
 
-      if (endTime) {
-        const [h, m] = endTime.split(":");
-        end.setHours(Number(h), Number(m));
+      const [sh, sm] = startTime.split(":").map(Number);
+      const [eh, em] = endTime.split(":").map(Number);
+
+      start.setHours(sh, sm, 0, 0);
+      end.setHours(eh, em, 0, 0);
+
+      if (end <= start) {
+        return NextResponse.json(
+          { error: "End time must be after start time" },
+          { status: 400 },
+        );
       }
     }
 
     const result = await prisma.$transaction(async (tx) => {
+      const duration = end.getTime() - start.getTime();
+
       const job = await tx.job.create({
         data: {
           title,
           type: jobType,
           clientId,
-          staffId,
           addressId,
+          isAnytime,
+          visitInstructions,
+          staffMembers: {
+            connect: staffId.map((id: string) => ({ id })),
+          },
         },
       });
 
@@ -59,42 +76,40 @@ export async function POST(req: NextRequest) {
             jobId: job.id,
             startTime: start,
             endTime: end,
-            status: "SCHEDULED",
+            status: AppointmentStatus.SCHEDULED,
           },
         });
       }
 
       if (jobType === "RECURRING") {
-        const { frequency, interval, endType, endsAfter, endsOn } = recurrence;
+        const { frequency, interval, endType, endsOn } = recurrence;
 
         await tx.recurrence.create({
           data: {
             jobId: job.id,
             frequency,
             interval,
-            endsAfter: endType === "after" ? endsAfter : null,
-            endsOn: endType === "on" ? new Date(endsOn) : null,
+            endType,
+            endsOn: endType === "on" && endsOn ? new Date(endsOn) : null,
           },
         });
 
-        // Generate recurring visits
+        const appointments = [];
         const current = new Date(start);
-        let count = 0;
+
+        let safetyCounter = 0;
 
         while (true) {
-          if (endType === "after" && count >= endsAfter) break;
-          if (endType === "on" && current > new Date(endsOn)) break;
+          if (endType === "on" && endsOn && current > new Date(endsOn)) break;
+          if (safetyCounter > 500) break; // prevent infinite loop
 
-          await tx.appointment.create({
-            data: {
-              jobId: job.id,
-              startTime: new Date(current),
-              endTime: new Date(current),
-              status: "SCHEDULED",
-            },
+          appointments.push({
+            jobId: job.id,
+            startTime: new Date(current),
+            endTime: new Date(current.getTime() + duration),
+            status: "SCHEDULED",
           });
 
-          // Move forward
           if (frequency === "weekly") {
             current.setDate(current.getDate() + 7 * interval);
           }
@@ -103,7 +118,13 @@ export async function POST(req: NextRequest) {
             current.setMonth(current.getMonth() + interval);
           }
 
-          count++;
+          safetyCounter++;
+        }
+
+        if (appointments.length) {
+          await tx.appointment.createMany({
+            data: appointments,
+          });
         }
       }
 
@@ -112,9 +133,49 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error(error);
+    console.error("Create Job Error:", error);
+
     return NextResponse.json(
       { error: "Internal server error" },
+      { status: 500 },
+    );
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+
+    const clientId = searchParams.get("clientId");
+    const type = searchParams.get("type"); // ONE_OFF | RECURRING
+
+    const jobs = await prisma.job.findMany({
+      where: {
+        ...(clientId && { clientId }),
+        ...(type && { type: type }),
+      },
+      include: {
+        client: true,
+        address: true,
+        staffMembers: true,
+        recurrence: true,
+        appointments: {
+          orderBy: {
+            startTime: "asc",
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return NextResponse.json(jobs);
+  } catch (error) {
+    console.error("GET Jobs Error:", error);
+
+    return NextResponse.json(
+      { error: "Failed to fetch jobs" },
       { status: 500 },
     );
   }
