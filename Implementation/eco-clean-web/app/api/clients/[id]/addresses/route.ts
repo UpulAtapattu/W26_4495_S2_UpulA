@@ -8,8 +8,6 @@ export async function GET(
   try {
     const clientId = params.id;
 
-    console.log("Client ID:", clientId);
-
     if (!clientId) {
       return NextResponse.json({ error: "Client ID required" }, { status: 400 });
     }
