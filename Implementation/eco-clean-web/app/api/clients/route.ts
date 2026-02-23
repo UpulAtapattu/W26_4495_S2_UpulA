@@ -1,7 +1,6 @@
+import { Address } from "@/app/components/tables/ClientTable";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { Prisma } from "@prisma/client";
-import { Address } from "@/app/components/tables/ClientTable";
 
 export async function GET(req: Request) {
   try {
@@ -14,41 +13,18 @@ export async function GET(req: Request) {
 
     const skip = (page - 1) * limit;
 
-    const where: Prisma.ClientWhereInput | undefined = q
+    const where = q
       ? {
           OR: [
-            {
-              firstName: {
-                contains: q,
-                mode: Prisma.QueryMode.insensitive,
-              },
-            },
-            {
-              lastName: {
-                contains: q,
-                mode: Prisma.QueryMode.insensitive,
-              },
-            },
-            {
-              email: {
-                contains: q,
-                mode: Prisma.QueryMode.insensitive,
-              },
-            },
-            {
-              phone: {
-                contains: q,
-                mode: Prisma.QueryMode.insensitive,
-              },
-            },
+            { firstName: { contains: q, mode: "insensitive" as const } },
+            { lastName: { contains: q, mode: "insensitive" as const } },
+            { email: { contains: q, mode: "insensitive" as const } },
+            { phone: { contains: q, mode: "insensitive" as const } },
           ],
         }
       : undefined;
 
-    const orderBy: Prisma.ClientOrderByWithRelationInput =
-      sort === "oldest"
-        ? { createdAt: Prisma.SortOrder.asc }
-        : { createdAt: Prisma.SortOrder.desc };
+    const orderBy = { createdAt: sort === "oldest" ? ("asc" as const) : ("desc" as const) };
 
     const [clients, total] = await Promise.all([
       prisma.client.findMany({
@@ -82,17 +58,14 @@ export async function GET(req: Request) {
     });
   } catch (error) {
     console.error("GET /clients failed:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
+// POST
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-
     const {
       title,
       firstName,
@@ -106,69 +79,57 @@ export async function POST(req: Request) {
       note,
     } = body;
 
-    // Basic validation
     if (!firstName || !lastName || !email || !phone) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     if (!addresses || addresses.length === 0) {
-      return NextResponse.json(
-        { error: "At least one address is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "At least one address is required" }, { status: 400 });
     }
 
-    const client = await prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
-        const createdClient = await tx.client.create({
+    const client = await prisma.$transaction(async (tx: typeof prisma) => {
+      const createdClient = await tx.client.create({
+        data: {
+          title,
+          firstName,
+          lastName,
+          companyName,
+          email,
+          phone,
+          preferredContact,
+          leadSource,
+        },
+      });
+
+      await tx.address.createMany({
+        data: addresses.map((addr: Address, index: number) => ({
+          clientId: createdClient.id,
+          street1: addr.street1,
+          street2: addr.street2,
+          city: addr.city,
+          province: addr.province,
+          postalCode: addr.postalCode,
+          country: addr.country,
+          isBilling: !!addr.isBilling,
+          isPrimary: index === 0,
+        })),
+      });
+
+      if (note) {
+        await tx.clientNote.create({
           data: {
-            title,
-            firstName,
-            lastName,
-            companyName,
-            email,
-            phone,
-            preferredContact,
-            leadSource,
+            clientId: createdClient.id,
+            content: note,
           },
         });
+      }
 
-        await tx.address.createMany({
-          data: addresses.map((addr: Address, index: number) => ({
-            clientId: createdClient.id,
-            street1: addr.street1,
-            street2: addr.street2,
-            city: addr.city,
-            province: addr.province,
-            postalCode: addr.postalCode,
-            country: addr.country,
-            isBilling: !!addr.isBilling,
-            isPrimary: index === 0,
-          })),
-        });
-
-        if (note) {
-          await tx.clientNote.create({
-            data: {
-              clientId: createdClient.id,
-              content: note,
-            },
-          });
-        }
-
-        return createdClient;
-      },
-    );
+      return createdClient;
+    });
 
     return NextResponse.json(client, { status: 201 });
   } catch (error) {
     console.error("Create client failed:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
