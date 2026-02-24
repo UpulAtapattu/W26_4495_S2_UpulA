@@ -1,4 +1,4 @@
-**Installation Guidelines**
+# Installation Guidelines
 ## Tech Stack
 - Next.js
 - Prisma ORM
@@ -25,7 +25,7 @@ npm install
 ## 2) Create the DB ecoclean
 
 ## 3) Setup the ENV file to match the DB connection string
-# PostgreSQL connection string (Prisma)
+### PostgreSQL connection string (Prisma)
 DATABASE_URL="postgresql://postgres:postgres@localhost:5432/eco_clean?schema=public"
 
 ## 4) Prisma Client Generation (In the bash)
