@@ -36,7 +36,7 @@ Create a .env file in the root of the eco-clean-web directory.
 NEXTAUTH_URL=http://localhost:3000
 DATABASE_URL="your-database-url"
 ----------------------------------------------------------------------------------------------
-### PostgreSQL connection string (Replace using your postgresql db)
+**PostgreSQL connection string (Replace using your postgresql db)**
 Example: DATABASE_URL="postgresql://postgres:postgres@localhost:5432/eco_clean?schema=public"
 ----------------------------------------------------------------------------------------------
 NEXTAUTH_SECRET="your-generated-secret"
