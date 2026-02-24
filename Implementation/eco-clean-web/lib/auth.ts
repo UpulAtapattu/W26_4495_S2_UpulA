@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
+<<<<<<< Updated upstream
 
 
+=======
+>>>>>>> Stashed changes
 export async function verifyUser(email: string, password: string) {
   return {
     id: "dev-user",
@@ -10,7 +13,10 @@ export async function verifyUser(email: string, password: string) {
     role: "ADMIN",
   };
 }
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 // export async function verifyUser(email: string, password: string) {
 //   const user = await prisma.user.findUnique({
 //     where: { email },
