@@ -131,3 +131,33 @@ export type EditUserInput = {
   role: string;
   email: string;
 };
+
+export type ParsedSelection = {
+  // Raw Date objects
+  startDate: Date;
+  endDate: Date;
+
+  // ISO strings (UTC)
+  startISO: string;
+  endISO: string;
+
+  // Original timezone-preserved strings
+  startWithOffset: string;
+  endWithOffset: string;
+
+  // Timestamps
+  startTimestamp: number;
+  endTimestamp: number;
+
+  // Date-only strings
+  startDateOnly: string;
+  endDateOnly: string;
+
+  // Time parts (local)
+  startTime: string; // "HH:mm"
+  endTime: string; // "HH:mm"
+
+  durationInMinutes: number;
+
+  allDay: boolean;
+};
