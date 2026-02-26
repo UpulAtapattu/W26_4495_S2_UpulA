@@ -1,54 +1,91 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
+// Infer tx type from prisma.$transaction callback signature
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
+
+type Body = {
+  title?: string;
+  clientId?: string;
+  staffId?: string | null;
+  addressId?: string | null;
+
+  jobType?: "ONE_OFF" | "RECURRING";
+
+  startDate?: string; // e.g. "2026-02-25"
+  startTime?: string | null; // e.g. "13:30"
+  endTime?: string | null; // e.g. "15:00"
+  isAnytime?: boolean;
+
+  recurrence?: {
+    frequency: "weekly" | "monthly";
+    interval: number;
+    endType: "after" | "on";
+    endsAfter?: number | null;
+    endsOn?: string | null; // "YYYY-MM-DD"
+  } | null;
+
+  visitInstructions?: string | null;
+};
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as Body;
 
     const {
       title,
       clientId,
-      staffId,
       addressId,
       jobType,
       startDate,
       startTime,
       endTime,
-      isAnytime,
+      isAnytime = false,
       recurrence,
       visitInstructions,
     } = body;
 
-    if (!title || !clientId || !startDate) {
+    if (!title || !clientId || !startDate || !jobType) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 },
       );
     }
 
-    // Combine date + time
+    // Combine date + time (basic)
     const start = new Date(startDate);
     const end = new Date(startDate);
 
     if (!isAnytime) {
       if (startTime) {
         const [h, m] = startTime.split(":");
-        start.setHours(Number(h), Number(m));
+        start.setHours(Number(h), Number(m), 0, 0);
       }
 
       if (endTime) {
         const [h, m] = endTime.split(":");
-        end.setHours(Number(h), Number(m));
+        end.setHours(Number(h), Number(m), 0, 0);
+      } else {
+        // default: 1 hour duration if endTime not provided
+        end.setTime(start.getTime() + 60 * 60 * 1000);
       }
+    } else {
+      // anytime: set a sensible default window (optional)
+      end.setTime(start.getTime() + 60 * 60 * 1000);
     }
 
-    const result = await prisma.$transaction(async (tx) => {
+    if (!addressId) {
+      return NextResponse.json({ error: "Missing addressId" }, { status: 400 });
+    }
+
+    const result = await prisma.$transaction(async (tx: Tx) => {
       const job = await tx.job.create({
         data: {
           title,
           type: jobType,
-          clientId,
-          addressId,
+          client: { connect: { id: clientId } },
+          address: { connect: { id: addressId } },
+          ...(visitInstructions ? { visitInstructions } : {}),
         },
       });
 
@@ -64,6 +101,13 @@ export async function POST(req: NextRequest) {
       }
 
       if (jobType === "RECURRING") {
+        if (!recurrence) {
+          return NextResponse.json(
+            { error: "Missing recurrence data" },
+            { status: 400 },
+          ) as any;
+        }
+
         const { frequency, interval, endType, endsAfter, endsOn } = recurrence;
 
         await tx.recurrence.create({
@@ -72,7 +116,7 @@ export async function POST(req: NextRequest) {
             frequency,
             interval,
             endType,
-            endsAfter: endType === "after" ? endsAfter : null,
+            endsAfter: endType === "after" ? (endsAfter ?? null) : null,
             endsOn: endType === "on" && endsOn ? new Date(endsOn) : null,
           },
         });
@@ -81,14 +125,28 @@ export async function POST(req: NextRequest) {
         let count = 0;
 
         while (true) {
-          if (endType === "after" && count >= endsAfter) break;
-          if (endType === "on" && current > new Date(endsOn)) break;
+          if (
+            endType === "after" &&
+            typeof endsAfter === "number" &&
+            count >= endsAfter
+          )
+            break;
+          if (endType === "on" && endsOn && current > new Date(endsOn)) break;
+
+          const apptStart = new Date(current);
+          const apptEnd = new Date(current);
+
+          // keep same duration as the first appointment
+          const durationMs = end.getTime() - start.getTime();
+          apptEnd.setTime(
+            apptStart.getTime() + Math.max(durationMs, 30 * 60 * 1000),
+          ); // min 30m
 
           await tx.appointment.create({
             data: {
               jobId: job.id,
-              startTime: new Date(current),
-              endTime: new Date(current), // (you probably want +duration here)
+              startTime: apptStart,
+              endTime: apptEnd,
               status: "SCHEDULED",
             },
           });
@@ -105,9 +163,12 @@ export async function POST(req: NextRequest) {
       return job;
     });
 
+    // If transaction returned a NextResponse (from the recurrence validation), pass it through
+    if (result instanceof NextResponse) return result;
+
     return NextResponse.json(result);
   } catch (error) {
-    console.error(error);
+    console.error("POST /api/jobs error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },
