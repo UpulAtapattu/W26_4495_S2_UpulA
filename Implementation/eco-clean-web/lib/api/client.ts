@@ -1,6 +1,6 @@
 import { Client } from "@/app/components/tables/ClientTable";
 import { ListResponse } from "@/app/types/api";
-import { Address } from "@prisma/client";
+import { Address } from "@/types";
 
 export type GetClientsParams = {
   q?: string;
@@ -36,14 +36,16 @@ export interface StaffResponse {
   role: string;
 }
 
-type ApiClientOptions = Omit<RequestInit, "body"> & {
-  body?: any;
+type ApiClientOptions<TBody = unknown> = Omit<RequestInit, "body"> & {
+  body?: TBody;
 };
 
-export async function apiClient<T>(
+type ApiErrorShape = { error?: string };
+
+export async function apiClient<TResponse, TBody = unknown>(
   url: string,
-  options: ApiClientOptions = {},
-) {
+  options: ApiClientOptions<TBody> = {},
+): Promise<TResponse> {
   const { body, headers, ...rest } = options;
 
   const res = await fetch(url, {
@@ -58,12 +60,12 @@ export async function apiClient<T>(
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {
-    throw new Error(data?.error || "Request failed");
+    const err = (data as ApiErrorShape | null)?.error;
+    throw new Error(err || "Request failed");
   }
 
-  return data as T;
+  return data as TResponse;
 }
-
 export function getClients(query: string) {
   return apiClient<ClientsResponse>(
     `/api/clients?q=${encodeURIComponent(query)}`,

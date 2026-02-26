@@ -161,3 +161,5 @@ export type ParsedSelection = {
 
   allDay: boolean;
 };
+
+export type Role = "ADMIN" | "STAFF";
