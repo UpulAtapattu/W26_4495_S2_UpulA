@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import randomColor from "randomcolor";
-import { Prisma } from "@prisma/client";
+import type { Appointment, Job, Client } from "@prisma/client";
 
-type AppointmentWithJobClient = Prisma.AppointmentGetPayload<{
-  include: {
-    job: { include: { client: true } };
+type AppointmentWithJobClient = Appointment & {
+  job: Job & {
+    client: Client;
   };
-}>;
+};
 
 export async function GET(req: NextRequest) {
   try {
@@ -36,20 +36,16 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const appointments: AppointmentWithJobClient[] =
-      await prisma.appointment.findMany({
-        where: {
-          status: "SCHEDULED",
-          AND: [
-            { startTime: { lt: rangeEnd } },
-            { endTime: { gt: rangeStart } },
-          ],
-        },
-        include: {
-          job: { include: { client: true } },
-        },
-        orderBy: { startTime: "asc" },
-      });
+    const appointments = (await prisma.appointment.findMany({
+      where: {
+        status: "SCHEDULED",
+        AND: [{ startTime: { lt: rangeEnd } }, { endTime: { gt: rangeStart } }],
+      },
+      include: {
+        job: { include: { client: true } },
+      },
+      orderBy: { startTime: "asc" },
+    })) as AppointmentWithJobClient[];
 
     const events = appointments.map((appt) => {
       const color = randomColor({ luminosity: "dark" });
