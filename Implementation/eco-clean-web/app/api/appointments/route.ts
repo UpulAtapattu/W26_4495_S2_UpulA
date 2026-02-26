@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import randomColor from "randomcolor";
+import { Prisma } from "@prisma/client";
+
+type AppointmentWithJobClient = Prisma.AppointmentGetPayload<{
+  include: {
+    job: { include: { client: true } };
+  };
+}>;
 
 export async function GET(req: NextRequest) {
   try {
@@ -29,18 +36,20 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // ✅ Correct overlap logic:
-    // event overlaps range if it starts before rangeEnd AND ends after rangeStart
-    const appointments = await prisma.appointment.findMany({
-      where: {
-        status: "SCHEDULED",
-        AND: [{ startTime: { lt: rangeEnd } }, { endTime: { gt: rangeStart } }],
-      },
-      include: {
-        job: { include: { client: true } },
-      },
-      orderBy: { startTime: "asc" },
-    });
+    const appointments: AppointmentWithJobClient[] =
+      await prisma.appointment.findMany({
+        where: {
+          status: "SCHEDULED",
+          AND: [
+            { startTime: { lt: rangeEnd } },
+            { endTime: { gt: rangeStart } },
+          ],
+        },
+        include: {
+          job: { include: { client: true } },
+        },
+        orderBy: { startTime: "asc" },
+      });
 
     const events = appointments.map((appt) => {
       const color = randomColor({ luminosity: "dark" });
@@ -48,8 +57,6 @@ export async function GET(req: NextRequest) {
       return {
         id: appt.id,
         title: `${appt.job.title} - ${appt.job.client.firstName}`,
-        // ✅ Always send ISO strings (not Date objects)
-        // This removes ambiguity and makes FullCalendar parsing consistent.
         start: appt.startTime.toISOString(),
         end: appt.endTime.toISOString(),
         backgroundColor: color,
