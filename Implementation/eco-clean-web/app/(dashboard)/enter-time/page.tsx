@@ -15,7 +15,7 @@ import {
   Title,
 } from "@mantine/core";
 import { useMemo, useState } from "react";
-import { IconClipboardList, IconChevronDown } from "@tabler/icons-react";
+import { IoClipboardOutline, IoChevronDown } from "react-icons/io5";
 
 type Week = 1 | 2;
 
@@ -88,7 +88,7 @@ export default function EnterTimePage() {
               value={payPeriod}
               onChange={setPayPeriod}
               data={PAY_PERIODS}
-              rightSection={<IconChevronDown size={18} />}
+              rightSection={<IoChevronDown size={18} />}
               styles={{
                 input: {
                   height: 52,
@@ -193,7 +193,7 @@ export default function EnterTimePage() {
                   aria-label="View day details"
                   onClick={() => setOpenDay({ week, idx: i })}
                 >
-                  <IconClipboardList size={40} />
+                  <IoClipboardOutline size={40} />
                 </ActionIcon>
               </Box>
             ))}

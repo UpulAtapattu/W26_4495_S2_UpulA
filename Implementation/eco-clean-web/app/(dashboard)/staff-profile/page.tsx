@@ -14,7 +14,7 @@ import {
     TextInput,
     Title,
 } from "@mantine/core";
-import { IconSettings } from "@tabler/icons-react";
+import { IoSettingsOutline } from "react-icons/io5";
 import { useRouter } from "next/navigation";
 
 
@@ -45,7 +45,7 @@ export default function StaffProfilePage() {
           aria-label="Settings"
           onClick={() => console.log("Open settings")}
         >
-          <IconSettings size={22} />
+          <IoSettingsOutline size={22} />
         </ActionIcon>
       </Group>
 
