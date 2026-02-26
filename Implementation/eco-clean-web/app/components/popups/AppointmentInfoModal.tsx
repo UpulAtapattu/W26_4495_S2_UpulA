@@ -169,14 +169,14 @@ export default function AppointmentInfoModal({ onSuccess }: Props) {
     onMutate: async (imageId) => {
       await qc.cancelQueries({ queryKey: ["appointment", selectedApptId] });
 
-      const prev = qc.getQueryData<any>(["appointment", selectedApptId]);
+      const prev = qc.getQueryData(["appointment", selectedApptId]);
 
       // Optimistically remove image from cached appointment
       qc.setQueryData(["appointment", selectedApptId], (old: any) => {
         if (!old) return old;
         return {
           ...old,
-          images: (old.images ?? []).filter((img: any) => img.id !== imageId),
+          images: (old.images ?? []).filter((img) => img.id !== imageId),
         };
       });
 

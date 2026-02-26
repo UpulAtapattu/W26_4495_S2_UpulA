@@ -1,6 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 
+type Tx = Parameters<typeof prisma.$transaction>[0] extends (
+  tx: infer T,
+  ...args: unknown[]
+) => unknown
+  ? T
+  : never;
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -88,7 +95,7 @@ export async function PATCH(
   }
 
   try {
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await prisma.$transaction(async (tx: Tx) => {
       // 1) Update appointment core fields (only if needed)
       let appt = null;
 
