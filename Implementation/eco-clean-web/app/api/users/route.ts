@@ -95,7 +95,7 @@ function generatePassword(length = 14) {
 }
 
 export async function POST(req: Request) {
-  const session = await getAuthSession();
+  // const session = await getAuthSession();
 
   // Uncomment when ready:
   // if (!session || session.user.role !== "ADMIN") {
