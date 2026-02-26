@@ -1,7 +1,19 @@
-import { Address } from "@/app/components/tables/ClientTable";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
+
+// ✅ Define Address type here (or move to /types/address.ts and import from there)
+type Address = {
+  street1: string;
+  street2?: string | null;
+  city: string;
+  province: string;
+  postalCode: string;
+  country: string;
+  isBilling?: boolean;
+};
+
+// ✅ Infer tx type from prisma.$transaction callback
+type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
 export async function GET(req: Request) {
   try {
@@ -83,7 +95,18 @@ export async function POST(req: Request) {
       leadSource,
       addresses,
       note,
-    } = body;
+    } = body as {
+      title?: string;
+      firstName?: string;
+      lastName?: string;
+      companyName?: string;
+      email?: string;
+      phone?: string;
+      preferredContact?: string;
+      leadSource?: string;
+      addresses?: Address[];
+      note?: string;
+    };
 
     if (!firstName || !lastName || !email || !phone) {
       return NextResponse.json(
@@ -99,47 +122,45 @@ export async function POST(req: Request) {
       );
     }
 
-    const client = await prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
-        const createdClient = await tx.client.create({
+    const client = await prisma.$transaction(async (tx: Tx) => {
+      const createdClient = await tx.client.create({
+        data: {
+          title,
+          firstName,
+          lastName,
+          companyName,
+          email,
+          phone,
+          preferredContact,
+          leadSource,
+        },
+      });
+
+      await tx.address.createMany({
+        data: addresses.map((addr, index) => ({
+          clientId: createdClient.id,
+          street1: addr.street1,
+          street2: addr.street2 ?? null,
+          city: addr.city,
+          province: addr.province,
+          postalCode: addr.postalCode,
+          country: addr.country,
+          isBilling: !!addr.isBilling,
+          isPrimary: index === 0,
+        })),
+      });
+
+      if (note) {
+        await tx.clientNote.create({
           data: {
-            title,
-            firstName,
-            lastName,
-            companyName,
-            email,
-            phone,
-            preferredContact,
-            leadSource,
+            clientId: createdClient.id,
+            content: note,
           },
         });
+      }
 
-        await tx.address.createMany({
-          data: addresses.map((addr: Address, index: number) => ({
-            clientId: createdClient.id,
-            street1: addr.street1,
-            street2: addr.street2,
-            city: addr.city,
-            province: addr.province,
-            postalCode: addr.postalCode,
-            country: addr.country,
-            isBilling: !!addr.isBilling,
-            isPrimary: index === 0,
-          })),
-        });
-
-        if (note) {
-          await tx.clientNote.create({
-            data: {
-              clientId: createdClient.id,
-              content: note,
-            },
-          });
-        }
-
-        return createdClient;
-      },
-    );
+      return createdClient;
+    });
 
     return NextResponse.json(client, { status: 201 });
   } catch (error) {
