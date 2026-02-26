@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/session";
 import { NextResponse } from "next/server";
