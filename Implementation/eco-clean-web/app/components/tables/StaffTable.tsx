@@ -85,8 +85,7 @@ export default function StaffTable() {
       />
 
       <Group justify="space-between" gap="sm" mb="md">
-        <Button onClick={openAdd}>Add user</Button>
-
+        <Box></Box>
         <Group gap="sm">
           <TextInput
             placeholder="Search users"
