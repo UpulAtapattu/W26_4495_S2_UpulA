@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import randomColor from "randomcolor";
-import type { Appointment, Job, Client } from "@prisma/client";
+import { Appointment, Job, Client } from "@prisma/client";
 
 type AppointmentWithJobClient = Appointment & {
   job: Job & {
