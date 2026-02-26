@@ -31,6 +31,18 @@ import { IoCloseOutline } from "react-icons/io5";
 
 type Status = "SCHEDULED" | "COMPLETED" | "CANCELLED";
 
+type AppointmentImage = { id: string; url: string };
+
+type AppointmentCache = {
+  id: string;
+  startTime: string;
+  endTime: string;
+  status: Status;
+  staff?: { id: string; name?: string }[];
+  notes?: { id: string; content: string; createdAt: string }[];
+  images?: AppointmentImage[];
+};
+
 type AppointmentForm = {
   id: string;
   startDate: Date | null;
@@ -163,20 +175,24 @@ export default function AppointmentInfoModal({ onSuccess }: Props) {
     closeAppointment();
   };
 
+  const apptKey = ["appointment", selectedApptId] as const;
+
   const deleteImageMutation = useMutation({
     mutationFn: (imageId: string) => deleteAppointmentImage(imageId),
 
-    onMutate: async (imageId) => {
-      await qc.cancelQueries({ queryKey: ["appointment", selectedApptId] });
+    onMutate: async (imageId: string) => {
+      await qc.cancelQueries({ queryKey: apptKey });
 
-      const prev = qc.getQueryData(["appointment", selectedApptId]);
+      const prev = qc.getQueryData<AppointmentCache>(apptKey);
 
-      // Optimistically remove image from cached appointment
-      qc.setQueryData(["appointment", selectedApptId], (old: any) => {
+      qc.setQueryData<AppointmentCache | undefined>(apptKey, (old) => {
         if (!old) return old;
+
         return {
           ...old,
-          images: (old.images ?? []).filter((img) => img.id !== imageId),
+          images: (old.images ?? []).filter(
+            (img: AppointmentImage) => img.id !== imageId,
+          ),
         };
       });
 
@@ -184,15 +200,13 @@ export default function AppointmentInfoModal({ onSuccess }: Props) {
     },
 
     onError: (_err, _imageId, ctx) => {
-      // rollback on failure
       if (ctx?.prev) {
-        qc.setQueryData(["appointment", selectedApptId], ctx.prev);
+        qc.setQueryData(apptKey, ctx.prev);
       }
     },
 
     onSettled: () => {
-      // refetch to be 100% consistent
-      qc.invalidateQueries({ queryKey: ["appointment", selectedApptId] });
+      qc.invalidateQueries({ queryKey: apptKey });
       onSuccess();
     },
   });

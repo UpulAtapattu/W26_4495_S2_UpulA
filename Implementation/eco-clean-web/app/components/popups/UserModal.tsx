@@ -18,26 +18,51 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
 type Mode = "create" | "edit";
+type Role = "ADMIN" | "STAFF";
+
+type UserLite = {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  role?: Role | string | null;
+};
 
 type Props = {
   opened: boolean;
   onClose: () => void;
   mode: Mode;
-  user?: {
-    id: string;
-    name?: string | null;
-    email?: string | null;
-    role?: "ADMIN" | "STAFF" | string | null;
-  } | null;
+  user?: UserLite | null;
 };
 
 type FormValues = {
   name: string;
   email: string;
-  role: "ADMIN" | "STAFF";
+  role: Role;
   password: string;
   confirmPassword: string;
 };
+
+type CreateUserResult = {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    createdAt?: string;
+  };
+  tempPassword: string;
+};
+
+type EditUserResult = {
+  user?: {
+    id: string;
+    name?: string;
+    email?: string;
+    role?: string;
+  };
+};
+
+type MutationResult = CreateUserResult | EditUserResult;
 
 export default function UserUpsertModal({
   opened,
@@ -82,7 +107,6 @@ export default function UserUpsertModal({
     },
   });
 
-  // reset when opening / switching mode / switching user
   useEffect(() => {
     if (!opened) return;
     setGeneratedPassword("");
@@ -92,37 +116,45 @@ export default function UserUpsertModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opened, initialValues]);
 
-  const mutation = useMutation({
-    mutationFn: async (values: FormValues) => {
+  const mutation = useMutation<MutationResult, Error, FormValues>({
+    mutationFn: async (values) => {
       if (mode === "create") {
-        // returns { user, tempPassword }
-        return createUser(values.name, values.role, values.email);
+        // expected: { user, tempPassword }
+        return (await createUser(
+          values.name,
+          values.role,
+          values.email,
+        )) as CreateUserResult;
       }
 
       if (!user?.id) throw new Error("Missing user id");
 
       const passwordToSet = (values.password || "").trim();
 
-      return editUser(
+      // expected: updated user or any success payload
+      return (await editUser(
         user.id,
         values.name,
         values.role,
         values.email,
         passwordToSet ? passwordToSet : undefined,
-      );
+      )) as EditUserResult;
     },
 
-    onSuccess: async (result: any) => {
+    onSuccess: async (result) => {
       await queryClient.invalidateQueries({
         queryKey: ["staff"],
         exact: false,
       });
 
       if (mode === "create") {
-        setGeneratedPassword(result?.tempPassword || "");
+        // Narrow result type safely
+        const temp = "tempPassword" in result ? result.tempPassword : "";
+        setGeneratedPassword(temp);
+
         form.setFieldValue("password", "");
         form.setFieldValue("confirmPassword", "");
-        return; // keep open to copy password
+        return; // keep open so admin can copy
       }
 
       onClose();
@@ -145,6 +177,11 @@ export default function UserUpsertModal({
     mutation.mutate(values);
   };
 
+  const roleOptions: { value: Role; label: string }[] = [
+    { value: "ADMIN", label: "Admin" },
+    { value: "STAFF", label: "Staff" },
+  ];
+
   return (
     <Modal
       opened={opened}
@@ -159,24 +196,25 @@ export default function UserUpsertModal({
           <TextInput label="Name" {...form.getInputProps("name")} />
           <TextInput label="Email" {...form.getInputProps("email")} />
 
-          {/* Select needs manual wiring for best TS compatibility */}
           <Select
             label="Role"
-            data={[
-              { value: "ADMIN", label: "Admin" },
-              { value: "STAFF", label: "Staff" },
-            ]}
+            data={roleOptions}
             value={form.values.role}
-            onChange={(v) => form.setFieldValue("role", (v as any) || "STAFF")}
+            onChange={(v) => {
+              // Mantine Select returns string | null
+              const nextRole: Role =
+                v === "ADMIN" || v === "STAFF" ? v : "STAFF";
+              form.setFieldValue("role", nextRole);
+            }}
             error={form.errors.role}
           />
 
-          {/* ADD: show generated password after successful create */}
           {mode === "create" && generatedPassword && (
             <Stack gap={6} mt="xs">
               <Text size="sm" fw={600}>
                 Generated password
               </Text>
+
               <Group justify="space-between" align="center">
                 <Code style={{ userSelect: "all" }}>{generatedPassword}</Code>
                 <Button
@@ -189,13 +227,13 @@ export default function UserUpsertModal({
                   Copy
                 </Button>
               </Group>
+
               <Text size="xs" c="dimmed">
                 Copy this now — you won’t be able to view it again later.
               </Text>
             </Stack>
           )}
 
-          {/* EDIT: optional password reset */}
           {mode === "edit" && (
             <>
               <PasswordInput

@@ -3,6 +3,7 @@ import { getAuthSession } from "@/lib/session";
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import { Role } from "@prisma/client";
 
 export async function GET(req: Request) {
   const session = await getAuthSession();
@@ -103,7 +104,7 @@ export async function POST(req: Request) {
   const body = (await req.json()) as {
     name?: string;
     email?: string;
-    role?: string;
+    role?: Role;
   };
 
   const { name, email, role } = body;
