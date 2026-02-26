@@ -3,8 +3,8 @@ import { getAuthSession } from "@/lib/session";
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { Role } from "@prisma/client";
 
+type Role = "ADMIN" | "STAFF";
 export async function GET(req: Request) {
   const session = await getAuthSession();
 
