@@ -27,9 +27,10 @@ import {
   IoPeopleOutline,
   IoPersonOutline,
 } from "react-icons/io5";
-import ClientPropertyModal from "../components/ClientModal";
+import ClientPropertyModal from "../components/popups/ClientModal";
 import NewJobModal from "../components/popups/JobModal";
 import { useDashboardUI } from "@/stores/store";
+import UserUpsertModal from "../components/popups/UserModal";
 
 export default function DashboardShell({
   children,
@@ -41,6 +42,11 @@ export default function DashboardShell({
   const [jobPopoverOpened, setJobPopoverOpened] = useState(false);
   const pathname = usePathname();
   const { selectedInfo } = useDashboardUI();
+
+  const [userOpened, setUserOpened] = useState(false);
+
+  const openAdd = () => setUserOpened(true);
+  const closeAdd = () => setUserOpened(false);
 
   return (
     <AppShell
@@ -116,7 +122,7 @@ export default function DashboardShell({
                         size="xl"
                         onClick={() => {
                           setOpened(false);
-                          setClientPopoverOpened(true);
+                          openAdd();
                         }}
                       >
                         <IoBriefcaseOutline />
@@ -131,6 +137,7 @@ export default function DashboardShell({
             </Flex>
             <Tooltip label="Dashboard" position="right" withArrow>
               <NavLink
+                onClick={() => setOpened(false)}
                 component={Link}
                 href="/"
                 bdrs="md"
@@ -140,6 +147,7 @@ export default function DashboardShell({
             </Tooltip>
             <Tooltip label="Clients" position="right" withArrow>
               <NavLink
+                onClick={() => setOpened(false)}
                 component={Link}
                 href="/clients"
                 bdrs="md"
@@ -149,6 +157,7 @@ export default function DashboardShell({
             </Tooltip>
             <Tooltip label="Employees" position="right" withArrow>
               <NavLink
+                onClick={() => setOpened(false)}
                 component={Link}
                 href="/employees"
                 bdrs="md"
@@ -159,6 +168,7 @@ export default function DashboardShell({
 
             <Tooltip label="Settings" position="right" withArrow>
               <NavLink
+                onClick={() => setOpened(false)}
                 component={Link}
                 href="/settings"
                 bdrs="md"
@@ -181,7 +191,19 @@ export default function DashboardShell({
         </Stack>
       </AppShell.Navbar>
       <AppShell.Main>
-        <Container fluid>
+        <Container
+          fluid
+          onClick={() => {
+            opened && setOpened(false);
+          }}
+        >
+          <UserUpsertModal
+            key="new"
+            opened={userOpened}
+            onClose={closeAdd}
+            mode="create"
+            user={null}
+          />
           <ClientPropertyModal
             opened={clientPopoverOpened}
             onClose={() => setClientPopoverOpened(false)}

@@ -68,7 +68,7 @@ export default function StaffTable() {
           <Table.Td>{u.name}</Table.Td>
           <Table.Td>{u.role}</Table.Td>
           <Table.Td>{u.email}</Table.Td>
-          <Table.Td>{formatDateTime(u.createdAt)}</Table.Td>
+          <Table.Td>{new Date(u.createdAt).toLocaleDateString()}</Table.Td>
         </Table.Tr>
       )),
     [openEdit, staff],
@@ -85,8 +85,7 @@ export default function StaffTable() {
       />
 
       <Group justify="space-between" gap="sm" mb="md">
-        <Button onClick={openAdd}>Add user</Button>
-
+        <Box></Box>
         <Group gap="sm">
           <TextInput
             placeholder="Search users"
@@ -115,7 +114,7 @@ export default function StaffTable() {
       ) : (
         <>
           <ScrollArea mih="60vh">
-            <Table withRowBorders>
+            <Table striped highlightOnHover withTableBorder withRowBorders>
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Name</Table.Th>
