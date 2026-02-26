@@ -3,10 +3,12 @@ import { Button, Card, Container, Group, Modal, Title } from "@mantine/core";
 import { ReactNode, useState } from "react";
 import UserUpsertModal from "../popups/UserModal";
 import { IoAdd } from "react-icons/io5";
+import ClientPropertyModal from "../popups/ClientModal";
+import { useQueryClient } from "@tanstack/react-query";
 
 const ClientShell = ({ children }: { children: ReactNode }) => {
   const [opened, setOpened] = useState(false);
-
+  const queryClient = useQueryClient();
   const openAdd = () => setOpened(true);
   const close = () => setOpened(false);
 
@@ -23,12 +25,14 @@ const ClientShell = ({ children }: { children: ReactNode }) => {
         {children}
       </Card>
 
-      <UserUpsertModal
-        key="new"
+      <ClientPropertyModal
         opened={opened}
-        onClose={close}
-        mode="create"
-        user={null}
+        onClose={() => {
+          setOpened(false);
+        }}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ["clients"] });
+        }}
       />
     </Container>
   );
