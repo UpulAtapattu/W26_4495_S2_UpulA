@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -89,85 +90,87 @@ export async function PATCH(
   }
 
   try {
-    const updated = await prisma.$transaction(async (tx) => {
-      // 1) Update appointment core fields (only if needed)
-      let appt = null;
+    const updated = await prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        // 1) Update appointment core fields (only if needed)
+        let appt = null;
 
-      if (Object.keys(data).length > 0) {
-        appt = await tx.appointment.update({
-          where: { id },
-          data,
-        });
-      } else {
-        appt = await tx.appointment.findUnique({ where: { id } });
-      }
-
-      if (!appt) throw new Error("Appointment not found");
-
-      // 2) Handle note updates (VisitNote)
-      // - note: string | null | undefined
-      //   undefined => don't touch notes
-      //   null/""    => remove the latest internal note (optional behavior)
-      //   string     => upsert latest internal note
-      if (note !== undefined) {
-        const trimmed = typeof note === "string" ? note.trim() : "";
-
-        // Find latest note (you can filter isClientVisible if you want)
-        const existing = await tx.visitNote.findFirst({
-          where: { appointmentId: id },
-          orderBy: { createdAt: "desc" },
-        });
-
-        if (!trimmed) {
-          // User cleared note => delete existing latest note (or you can keep it)
-          if (existing) {
-            await tx.visitNote.delete({ where: { id: existing.id } });
-          }
+        if (Object.keys(data).length > 0) {
+          appt = await tx.appointment.update({
+            where: { id },
+            data,
+          });
         } else {
-          if (existing) {
-            await tx.visitNote.update({
-              where: { id: existing.id },
-              data: {
-                content: trimmed,
-                ...(typeof noteIsClientVisible === "boolean"
-                  ? { isClientVisible: noteIsClientVisible }
-                  : {}),
-              },
-            });
+          appt = await tx.appointment.findUnique({ where: { id } });
+        }
+
+        if (!appt) throw new Error("Appointment not found");
+
+        // 2) Handle note updates (VisitNote)
+        // - note: string | null | undefined
+        //   undefined => don't touch notes
+        //   null/""    => remove the latest internal note (optional behavior)
+        //   string     => upsert latest internal note
+        if (note !== undefined) {
+          const trimmed = typeof note === "string" ? note.trim() : "";
+
+          // Find latest note (you can filter isClientVisible if you want)
+          const existing = await tx.visitNote.findFirst({
+            where: { appointmentId: id },
+            orderBy: { createdAt: "desc" },
+          });
+
+          if (!trimmed) {
+            // User cleared note => delete existing latest note (or you can keep it)
+            if (existing) {
+              await tx.visitNote.delete({ where: { id: existing.id } });
+            }
           } else {
-            await tx.visitNote.create({
-              data: {
-                appointmentId: id,
-                content: trimmed,
-                isClientVisible:
-                  typeof noteIsClientVisible === "boolean"
-                    ? noteIsClientVisible
-                    : false,
-              },
-            });
+            if (existing) {
+              await tx.visitNote.update({
+                where: { id: existing.id },
+                data: {
+                  content: trimmed,
+                  ...(typeof noteIsClientVisible === "boolean"
+                    ? { isClientVisible: noteIsClientVisible }
+                    : {}),
+                },
+              });
+            } else {
+              await tx.visitNote.create({
+                data: {
+                  appointmentId: id,
+                  content: trimmed,
+                  isClientVisible:
+                    typeof noteIsClientVisible === "boolean"
+                      ? noteIsClientVisible
+                      : false,
+                },
+              });
+            }
           }
         }
-      }
 
-      // 3) Return fresh included data
-      return tx.appointment.findUnique({
-        where: { id },
-        include: {
-          staff: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              role: true,
-              createdAt: true,
+        // 3) Return fresh included data
+        return tx.appointment.findUnique({
+          where: { id },
+          include: {
+            staff: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                createdAt: true,
+              },
             },
+            job: true,
+            notes: true,
+            images: true,
           },
-          job: true,
-          notes: true,
-          images: true,
-        },
-      });
-    });
+        });
+      },
+    );
 
     return NextResponse.json(updated);
   } catch (err) {
