@@ -2,9 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthSession } from "@/lib/session";
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
-import { Prisma } from "@prisma/client";
 import crypto from "crypto";
-import { User, UserForm } from "@/types";
 
 export async function GET(req: Request) {
   const session = await getAuthSession();
@@ -20,53 +18,41 @@ export async function GET(req: Request) {
     const page = Number(searchParams.get("page") || 1);
     const limit = Number(searchParams.get("limit") || 20);
     const sort = searchParams.get("sort") || "newest";
-
     const paginate = searchParams.get("paginate") !== "false";
 
     const skip = (page - 1) * limit;
 
-    const where: Prisma.UserWhereInput = {
-      ...(q && {
-        OR: [
-          {
-            name: {
-              contains: q,
-              mode: Prisma.QueryMode.insensitive,
-            },
-          },
-          {
-            email: {
-              contains: q,
-              mode: Prisma.QueryMode.insensitive,
-            },
-          },
-        ],
-      }),
+    const where = q
+      ? {
+          OR: [
+            { name: { contains: q, mode: "insensitive" as const } },
+            { email: { contains: q, mode: "insensitive" as const } },
+          ],
+        }
+      : undefined;
+
+    const orderBy = {
+      createdAt: sort === "oldest" ? ("asc" as const) : ("desc" as const),
     };
 
-    const orderBy: Prisma.UserOrderByWithRelationInput =
-      sort === "oldest"
-        ? { createdAt: Prisma.SortOrder.asc }
-        : { createdAt: Prisma.SortOrder.desc };
+    const baseSelect = {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      createdAt: true,
+    } as const;
 
     if (!paginate) {
       const users = await prisma.user.findMany({
         where,
         orderBy,
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          createdAt: true,
-        },
+        select: baseSelect,
       });
 
       return NextResponse.json({
         data: users,
-        meta: {
-          total: users.length,
-        },
+        meta: { total: users.length },
       });
     }
 
@@ -76,13 +62,7 @@ export async function GET(req: Request) {
         orderBy,
         skip,
         take: limit,
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          createdAt: true,
-        },
+        select: baseSelect,
       }),
       prisma.user.count({ where }),
     ]);
@@ -97,7 +77,7 @@ export async function GET(req: Request) {
       },
     });
   } catch (error) {
-    console.error("GET /staff failed:", error);
+    console.error("GET /users failed:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },
@@ -115,11 +95,18 @@ function generatePassword(length = 14) {
 export async function POST(req: Request) {
   const session = await getAuthSession();
 
+  // Uncomment when ready:
   // if (!session || session.user.role !== "ADMIN") {
   //   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   // }
 
-  const { name, email, role } = await req.json();
+  const body = (await req.json()) as {
+    name?: string;
+    email?: string;
+    role?: string;
+  };
+
+  const { name, email, role } = body;
 
   if (!name || !email || !role) {
     return NextResponse.json(
@@ -133,7 +120,13 @@ export async function POST(req: Request) {
 
   const user = await prisma.user.create({
     data: { name, email, role, password: hashedPassword },
-    select: { id: true, name: true, email: true, role: true, createdAt: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      createdAt: true,
+    },
   });
 
   // return tempPassword only once (admin can copy)
