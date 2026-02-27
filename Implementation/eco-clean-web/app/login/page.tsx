@@ -9,6 +9,7 @@ import {
   Flex,
   Alert,
   Card,
+  PasswordInput,
 } from "@mantine/core";
 import { useRouter } from "next/navigation";
 import { IoCloseCircle } from "react-icons/io5";
@@ -68,7 +69,7 @@ export default function LoginPage() {
             mb="sm"
           />
 
-          <TextInput
+          <PasswordInput
             label="Password"
             placeholder="Your password..."
             type="password"
