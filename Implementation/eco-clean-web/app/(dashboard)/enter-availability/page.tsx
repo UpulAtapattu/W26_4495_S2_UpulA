@@ -84,7 +84,9 @@ export default function EnterAvailabilityPage() {
             <DateInput
               placeholder="mm/dd/yyyy"
               value={form.values.todaysDate}
-              onChange={(date) => form.setFieldValue("todaysDate", date)}
+              onChange={(d) => {
+                form.setFieldValue("todaysDate", d ? new Date(d) : null);
+              }}
               error={form.errors.todaysDate}
               clearable={false}
             />
@@ -138,7 +140,7 @@ export default function EnterAvailabilityPage() {
                       "days",
                       checked
                         ? [...current, d.value]
-                        : current.filter((x) => x !== d.value)
+                        : current.filter((x) => x !== d.value),
                     );
                   }}
                 />
